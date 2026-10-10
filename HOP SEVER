@@ -4,6 +4,8 @@ local TeleportService = game:GetService("TeleportService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService")
+local Lighting = game:GetService("Lighting")
+local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
@@ -19,12 +21,44 @@ ScreenGui.Name = "ATOMIC_HUB_AutoHop"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
+-- ================= TÍNH NĂNG ẨN: GIẢM LAG & ĐỒ HỌA KHOAI LANG =================
+task.spawn(function()
+    pcall(function()
+        -- Cấu hình Lighting nhẹ nhàng
+        Lighting.GlobalShadows = false
+        Lighting.FogEnd = 9e9
+        for _, v in ipairs(Lighting:GetChildren()) do
+            if v:IsA("PostEffect") or v:IsA("Sky") or v:IsA("Atmosphere") then
+                v:Destroy()
+            end
+        end
+
+        -- Xóa bỏ các hiệu ứng nặng (Particle, Trail, Beam, Fire, Smoke, Sparkles)
+        local function clearHeavyEffects(parent)
+            for _, obj in ipairs(parent:GetDescendants()) do
+                if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+                    obj:Destroy()
+                elseif obj:IsA("BasePart") then
+                    obj.Material = Enum.Material.SmoothPlastic
+                    obj.CastShadow = false
+                end
+            end
+        end
+
+        clearHeavyEffects(workspace)
+        workspace.DescendantAdded:Connect(function(obj)
+            if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
+                pcall(function() obj:Destroy() end)
+            end
+        end)
+    end)
+end)
+
 -- PALETTE MÀU SẮC
 local COLOR_BG = Color3.fromRGB(15, 15, 20)
 local COLOR_BLUE = Color3.fromRGB(0, 140, 255)
 local COLOR_DARK_BLUE = Color3.fromRGB(0, 80, 180)
 local COLOR_TEXT = Color3.fromRGB(255, 255, 255)
-local COLOR_RED = Color3.fromRGB(255, 50, 50)
 local COLOR_CARD = Color3.fromRGB(22, 22, 30)
 
 -- Lấy tên Game hiện tại
@@ -111,15 +145,14 @@ local texts = {
         inputLabel = "Enter target player count (min: 1):",
         inputPlayerLabel = "Enter player name (name:abcxyz):",
         maxInfo = "Max server capacity (max): ",
-        errorLimit = "⚠️ Exceeded limit (Max: ",
         hopBtn = "AUTO HOP SERVER",
         tpBtn = "LET TELEPORT",
         statusHop = "Reading server data to hop...",
-        statusTP = "Searching if the player is active in any game/server...",
+        statusTP = "Searching if the player is active...",
         statusTPFound = "Teleporting to player's server...",
         statusRetry = "Scanning server list (Retrying)...",
         statusFound = "Found target server!",
-        statusNotFound = "Player not found or offline in any server!"
+        statusNotFound = "Player not found or offline!"
     },
     VN = {
         loadTitle = "ATOMIC HUB - ĐANG TẢI...",
@@ -133,7 +166,6 @@ local texts = {
         inputLabel = "Nhập số lượng người chơi muốn vào (min: 1):",
         inputPlayerLabel = "Nhập tên người chơi (name:abcxyz):",
         maxInfo = "Sức chứa tối đa của Server (max): ",
-        errorLimit = "⚠️ Quá giới hạn (Tối đa: ",
         hopBtn = "BẮT ĐẦU HOP SERVER",
         tpBtn = "LET TELEPORT",
         statusHop = "Đang đọc các dữ liệu sever để hop...",
@@ -141,13 +173,13 @@ local texts = {
         statusTPFound = "Đang chuyển đến sever của người chơi...",
         statusRetry = "Đang quét danh sách Server (Thử lại)...",
         statusFound = "Đã tìm thấy Server phù hợp!",
-        statusNotFound = "Không tìm thấy người chơi hoặc họ đang offline!"
+        statusNotFound = "Không tìm thấy người chơi hoặc đang offline!"
     }
 }
 
 local function getTxt(key) return texts[currentLang][key] or key end
 
--- ================= NÚT FLOATING LANG =================
+-- NÚT FLOATING LANG
 local FloatLangBtn = Instance.new("TextButton")
 FloatLangBtn.Size = UDim2.new(0, 120, 0, 36)
 FloatLangBtn.Position = UDim2.new(0.5, -60, 0, 15)
@@ -162,7 +194,7 @@ local FloatStroke = Instance.new("UIStroke", FloatLangBtn)
 FloatStroke.Color = COLOR_BLUE
 FloatStroke.Thickness = 2
 
--- ================= 1. MÀN HÌNH LOADING BAN ĐẦU =================
+-- 1. MÀN HÌNH LOADING
 local LoadingCanvas = Instance.new("CanvasGroup")
 LoadingCanvas.Size = UDim2.new(0, 380, 0, 210)
 LoadingCanvas.Position = UDim2.new(0.5, -190, 0.5, -105)
@@ -243,7 +275,7 @@ LoadingBarFill.BackgroundColor3 = COLOR_BLUE
 LoadingBarFill.Parent = LoadingBarBg
 Instance.new("UICorner", LoadingBarFill).CornerRadius = UDim.new(0, 5)
 
--- ================= 2. GIAO DIỆN CHỌN CHẾ ĐỘ (2 Ô HÌNH VUÔNG) =================
+-- 2. GIAO DIỆN CHỌN CHẾ ĐỘ
 local ModeCanvas = Instance.new("CanvasGroup")
 ModeCanvas.Size = UDim2.new(0, 450, 0, 280)
 ModeCanvas.Position = UDim2.new(0.5, -225, 0.5, -140)
@@ -267,9 +299,8 @@ ModeTitle.Font = Enum.Font.GothamBold
 ModeTitle.TextSize = 16
 ModeTitle.Parent = ModeCanvas
 
-local selectedMode = 1 -- 1: Auto Hop, 2: TP Player
+local selectedMode = 1
 
--- Ô bên trái: Auto Hop
 local Card1 = Instance.new("TextButton")
 Card1.Size = UDim2.new(0, 170, 0, 140)
 Card1.Position = UDim2.new(0, 35, 0, 50)
@@ -284,7 +315,6 @@ local Card1Stroke = Instance.new("UIStroke", Card1)
 Card1Stroke.Color = COLOR_BLUE
 Card1Stroke.Thickness = 2
 
--- Ô bên phải: TP Player
 local Card2 = Instance.new("TextButton")
 Card2.Size = UDim2.new(0, 170, 0, 140)
 Card2.Position = UDim2.new(0, 245, 0, 50)
@@ -326,7 +356,6 @@ Card1.MouseButton1Click:Connect(function() updateSelection(1) end)
 Card2.MouseButton1Click:Connect(function() updateSelection(2) end)
 updateSelection(1)
 
--- Nút Execute ở dưới
 local ExecBtn = Instance.new("TextButton")
 ExecBtn.Size = UDim2.new(1, -70, 0, 42)
 ExecBtn.Position = UDim2.new(0, 35, 1, -55)
@@ -340,7 +369,7 @@ Instance.new("UICorner", ExecBtn).CornerRadius = UDim.new(0, 6)
 local ExecStroke = Instance.new("UIStroke", ExecBtn)
 ExecStroke.Color = COLOR_BLUE
 
--- ================= 3. MENU RIÊNG BIỆT HOÀN TOÀN =================
+-- 3. MENU RIÊNG BIỆT
 local FeatureCanvas = Instance.new("CanvasGroup")
 FeatureCanvas.Size = UDim2.new(0, 380, 0, 220)
 FeatureCanvas.Position = UDim2.new(0.5, -190, 0.5, -110)
@@ -406,7 +435,6 @@ FeatureTitle.Font = Enum.Font.GothamBold
 FeatureTitle.TextSize = 14
 FeatureTitle.Parent = FeatureCanvas
 
--- Khung Nhập Liệu
 local Label1 = Instance.new("TextLabel")
 Label1.Size = UDim2.new(1, -30, 0, 20)
 Label1.Position = UDim2.new(0, 15, 0, 10)
@@ -450,7 +478,6 @@ Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 6)
 local ActionStroke = Instance.new("UIStroke", ActionBtn)
 ActionStroke.Color = COLOR_BLUE
 
--- STATUS TEXT THÔNG BÁO DÒNG CHỮ TO GIỮA MÀN HÌNH
 local StatusText = Instance.new("TextLabel")
 StatusText.Size = UDim2.new(1, 0, 0, 80)
 StatusText.Position = UDim2.new(0, 0, 0.4, 0)
@@ -463,7 +490,6 @@ StatusText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 StatusText.Visible = false
 StatusText.Parent = ScreenGui
 
--- Nút Execute mở Menu tương ứng
 ExecBtn.MouseButton1Click:Connect(function()
     ModeCanvas.Visible = false
     FeatureCanvas.Visible = true
@@ -485,7 +511,6 @@ ExecBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Lang switch
 FloatLangBtn.MouseButton1Click:Connect(function()
     if currentLang == "EN" then
         currentLang = "VN"
@@ -528,7 +553,7 @@ task.spawn(function()
     TweenService:Create(ModeCanvas, TweenInfo.new(1.2), {GroupTransparency = 0}):Play()
 end)
 
--- LOGIC AUTO HOP
+-- LOGIC AUTO HOP (Tự hiện lại menu khi sang server mới)
 local function HopServer(targetCount)
     FeatureCanvas.Visible = false
     StatusText.Visible = true
@@ -570,7 +595,7 @@ local function HopServer(targetCount)
     end
 end
 
--- LOGIC GLOBAL TP TO PLAYER (MỌI GAME, MỌI SERVER)
+-- LOGIC GLOBAL TP TO PLAYER
 local function TpToGlobalPlayer(rawInput)
     local targetName = rawInput
     if rawInput:sub(1, 5):lower() == "name:" then targetName = rawInput:sub(6) end
@@ -582,11 +607,8 @@ local function TpToGlobalPlayer(rawInput)
     StatusText.Visible = true
     StatusText.Text = getTxt("statusTP")
 
-    -- 1. Tìm UserId của tên người chơi
     local userId = nil
-    pcall(function()
-        userId = Players:GetUserIdFromNameAsync(targetName)
-    end)
+    pcall(function() userId = Players:GetUserIdFromNameAsync(targetName) end)
 
     if not userId then
         StatusText.Text = "❌ Không tìm thấy tên người chơi!"
@@ -596,14 +618,7 @@ local function TpToGlobalPlayer(rawInput)
         return
     end
 
-    -- 2. Đọc thông tin Presence (Mọi Game & Server trên Roblox)
     local targetPlaceId, targetJobId = nil, nil
-    pcall(function()
-        local presences = HttpService:JSONDecode(game:HttpGet("https://presence.roblox.com/v1/presence/users", true))
-        -- Hoặc truy xuất qua Roblox TeleportService / User Presence API
-    end)
-
-    -- Quét server instance thực tế
     local cursor = ""
     while task.wait(0.3) do
         local success, result = pcall(function()
