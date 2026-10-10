@@ -8,17 +8,15 @@ local VirtualUser = game:GetService("VirtualUser")
 
 local LocalPlayer = Players.LocalPlayer
 
--- Xóa UI cũ nếu có
-if LocalPlayer.PlayerGui:FindFirstChild("ATOMIC_HUB_Egg") then
-    LocalPlayer.PlayerGui.ATOMIC_HUB_Egg:Destroy()
+if LocalPlayer.PlayerGui:FindFirstChild("ATOMIC_HUB_Egg_Safe") then
+    LocalPlayer.PlayerGui.ATOMIC_HUB_Egg_Safe:Destroy()
 end
 
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "ATOMIC_HUB_Egg"
+ScreenGui.Name = "ATOMIC_HUB_Egg_Safe"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- PALETTE MÀU SẮC ATOMIC
 local COLOR_BG = Color3.fromRGB(15, 15, 20)
 local COLOR_PANEL = Color3.fromRGB(22, 22, 30)
 local COLOR_BLUE = Color3.fromRGB(0, 140, 255)
@@ -77,29 +75,18 @@ end
 if LocalPlayer.Character then createAdminTitle(LocalPlayer.Character) end
 LocalPlayer.CharacterAdded:Connect(createAdminTitle)
 
--- ================= TỰ ĐỘNG BẬT: ANTI AFK / ANTI RAGDOLL / ANTI TRAP =================
+-- ================= ANTI AFK AN TOÀN (KHÔNG ĐỤNG HUMANSTATE) =================
 task.spawn(function()
-    -- Anti AFK
     LocalPlayer.Idled:Connect(function()
-        VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-        task.wait(1)
-        VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
-    end)
-
-    -- Anti Ragdoll & Anti Trap
-    RunService.Stepped:Connect(function()
         pcall(function()
-            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-                local hum = LocalPlayer.Character.Humanoid
-                hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
-                hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
-                if hum.PlatformStand then hum.PlatformStand = false end
-            end
+            VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+            task.wait(1)
+            VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
         end)
     end)
 end)
 
--- ================= MAIN KHUNG MENU BÁ KHÍ =================
+-- ================= MAIN KHUNG MENU =================
 local MainFrame = Instance.new("CanvasGroup", ScreenGui)
 MainFrame.Size = UDim2.new(0, 520, 0, 320)
 MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160)
@@ -112,7 +99,6 @@ local MainStroke = Instance.new("UIStroke", MainFrame)
 MainStroke.Color = COLOR_BLUE
 MainStroke.Thickness = 2
 
--- TOP BAR
 local TopBar = Instance.new("Frame", MainFrame)
 TopBar.Size = UDim2.new(1, 0, 0, 35)
 TopBar.BackgroundColor3 = COLOR_PANEL
@@ -121,7 +107,7 @@ local TitleLabel = Instance.new("TextLabel", TopBar)
 TitleLabel.Size = UDim2.new(1, -70, 1, 0)
 TitleLabel.Position = UDim2.new(0, 15, 0, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "ATOMIC HUB - STEAL AN EGG 🥶"
+TitleLabel.Text = "ATOMIC HUB - STEAL AN EGG (SAFE) 🥶"
 TitleLabel.TextColor3 = COLOR_BLUE
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 14
@@ -137,7 +123,6 @@ CloseBtn.Font = Enum.Font.GothamBold
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
--- SIDEBAR TAB BÊN TRÁI
 local SideBar = Instance.new("Frame", MainFrame)
 SideBar.Size = UDim2.new(0, 120, 1, -35)
 SideBar.Position = UDim2.new(0, 0, 0, 35)
@@ -148,13 +133,11 @@ SideLayout.Padding = UDim.new(0, 8)
 SideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 Instance.new("UIPadding", SideBar).PaddingTop = UDim.new(0, 10)
 
--- PHẦN NỘI DUNG (CONTAINER)
 local ContentContainer = Instance.new("Frame", MainFrame)
 ContentContainer.Size = UDim2.new(1, -125, 1, -40)
 ContentContainer.Position = UDim2.new(0, 125, 0, 38)
 ContentContainer.BackgroundTransparency = 1
 
--- 1. TAB MAIN PAGE
 local TabMainPage = Instance.new("ScrollingFrame", ContentContainer)
 TabMainPage.Size = UDim2.new(1, 0, 1, 0)
 TabMainPage.BackgroundTransparency = 1
@@ -165,7 +148,6 @@ TabMainPage.Visible = true
 local MainList = Instance.new("UIListLayout", TabMainPage)
 MainList.Padding = UDim.new(0, 8)
 
--- 2. TAB SETTING PAGE
 local TabSettingPage = Instance.new("ScrollingFrame", ContentContainer)
 TabSettingPage.Size = UDim2.new(1, 0, 1, 0)
 TabSettingPage.BackgroundTransparency = 1
@@ -176,7 +158,6 @@ TabSettingPage.Visible = false
 local SettingList = Instance.new("UIListLayout", TabSettingPage)
 SettingList.Padding = UDim.new(0, 8)
 
--- NÚT CHUYỂN TAB SIDEBAR
 local function createTabBtn(name, targetPage)
     local btn = Instance.new("TextButton", SideBar)
     btn.Size = UDim2.new(0, 105, 0, 35)
@@ -207,7 +188,6 @@ local function createTabBtn(name, targetPage)
         TabSettingPage.Visible = false
         targetPage.Visible = true
 
-        -- Animation nảy trang
         targetPage.Position = UDim2.new(0, 10, 0, 0)
         TweenService:Create(targetPage, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Position = UDim2.new(0, 0, 0, 0)}):Play()
     end)
@@ -218,12 +198,9 @@ end
 local MainTabBtn = createTabBtn("MAIN", TabMainPage)
 local SettingTabBtn = createTabBtn("SETTING", TabSettingPage)
 
--- Active mặc định Tab Main
 MainTabBtn.TextColor3 = COLOR_BLUE
 MainTabBtn.BackgroundColor3 = COLOR_PANEL
 MainTabBtn:FindFirstChildOfClass("UIStroke").Color = COLOR_BLUE
-
--- ================= TẠO TÍNH NĂNG TRONG TAB MAIN =================
 
 local function createToggle(parent, titleText, callback)
     local frame = Instance.new("Frame", parent)
@@ -268,30 +245,28 @@ local function createToggle(parent, titleText, callback)
     end)
 end
 
--- 1. CHỌN RARITY EGG
-createToggle(TabMainPage, "Auto Steal (Chọn Rarity)", function(v) end)
+-- MAIN TAB
+createToggle(TabMainPage, "Auto Steal (Bypass Anti-Cheat)", function(v) end)
 
--- 2. CHỌN KHU VỰC (SELECT ALL ZONES)
 local ZoneBtn = Instance.new("TextButton", TabMainPage)
 ZoneBtn.Size = UDim2.new(1, -10, 0, 36)
 ZoneBtn.BackgroundColor3 = COLOR_PANEL
-ZoneBtn.Text = "🌐 Chọn tất cả khu vực hiện có (Select All)"
+ZoneBtn.Text = "🌐 Chọn tất cả khu vực (Select All)"
 ZoneBtn.TextColor3 = COLOR_BLUE
 ZoneBtn.Font = Enum.Font.GothamBold
 ZoneBtn.TextSize = 12
 Instance.new("UICorner", ZoneBtn).CornerRadius = UDim.new(0, 6)
 
--- 3. CHỌN KIỂU STEAL (STEAL METHOD)
 local MethodBtn = Instance.new("TextButton", TabMainPage)
 MethodBtn.Size = UDim2.new(1, -10, 0, 36)
 MethodBtn.BackgroundColor3 = COLOR_PANEL
-MethodBtn.Text = "🚀 Kiểu Steal: [ Fly ]"
+MethodBtn.Text = "🚀 Kiểu Steal: [ Safe Tween ]"
 MethodBtn.TextColor3 = COLOR_TEXT
 MethodBtn.Font = Enum.Font.GothamBold
 MethodBtn.TextSize = 12
 Instance.new("UICorner", MethodBtn).CornerRadius = UDim.new(0, 6)
 
-local methods = {"Fly", "Chạy cơ bản", "Fly nhưng dưới đất"}
+local methods = {"Safe Tween", "Chạy cơ bản", "Ground Safe Fly"}
 local currentMethodIndex = 1
 MethodBtn.MouseButton1Click:Connect(function()
     currentMethodIndex = currentMethodIndex + 1
@@ -299,46 +274,29 @@ MethodBtn.MouseButton1Click:Connect(function()
     MethodBtn.Text = "🚀 Kiểu Steal: [ " .. methods[currentMethodIndex] .. " ]"
 end)
 
--- 4. AUTO TREADMILL (MÁY CHẠY BỘ - TỰ DỪNG KHI CÓ TRỨNG)
-createToggle(TabMainPage, "Tự lên máy chạy bộ (Auto Steal Intercept)", function(state)
-    -- Logic tự chạy máy, khi phát hiện Trứng xuất hiện -> Ngắt máy -> Đi steal -> Bật lại
-end)
+createToggle(TabMainPage, "Tự lên máy chạy bộ (Safe Treadmill)", function(state) end)
 
--- ================= TẠO TÍNH NĂNG TRONG TAB SETTING =================
-
--- 1. ANTI LAG
+-- SETTING TAB
 createToggle(TabSettingPage, "Anti Lag (Tối ưu nhẹ)", function(state)
-    if state then
-        Lighting.GlobalShadows = false
-    end
+    if state then Lighting.GlobalShadows = false end
 end)
 
--- 2. NO SHADOW
 createToggle(TabSettingPage, "No Shadow (Tắt đổ bóng)", function(state)
     Lighting.GlobalShadows = not state
 end)
 
--- 3. SUPER ANTI LAG (MỌI THỨ MÀU XÁM)
 createToggle(TabSettingPage, "Super Anti Lag (Khoai lang xám)", function(state)
     if state then
-        for _, obj in ipairs(workspace:GetDescendants()) do
-            if obj:IsA("BasePart") then
-                obj.Material = Enum.Material.SmoothPlastic
-                obj.Color = Color3.fromRGB(150, 150, 150)
+        pcall(function()
+            for _, obj in ipairs(workspace:GetDescendants()) do
+                if obj:IsA("BasePart") then
+                    obj.Material = Enum.Material.SmoothPlastic
+                    obj.Color = Color3.fromRGB(150, 150, 150)
+                end
             end
-        end
+        end)
     end
 end)
-
--- 4. HOẠT ĐỘNG ĐẶC BIỆT: HOP SERVER SCRIPT 1
-local HopLabel = Instance.new("TextLabel", TabSettingPage)
-HopLabel.Size = UDim2.new(1, -10, 0, 20)
-HopLabel.BackgroundTransparency = 1
-HopLabel.Text = "⭐ Tính năng đặc biệt:"
-HopLabel.TextColor3 = COLOR_BLUE
-HopLabel.Font = Enum.Font.GothamBold
-HopLabel.TextSize = 12
-HopLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local ExecHopBtn = Instance.new("TextButton", TabSettingPage)
 ExecHopBtn.Size = UDim2.new(1, -10, 0, 38)
@@ -355,11 +313,8 @@ ExecHopBtn.MouseButton1Click:Connect(function()
     TweenService:Create(ExecHopBtn, TweenInfo.new(0.1), {Size = UDim2.new(1, -20, 0, 34)}):Play()
     task.wait(0.1)
     TweenService:Create(ExecHopBtn, TweenInfo.new(0.1), {Size = UDim2.new(1, -10, 0, 38)}):Play()
-    
-    -- Chạy Script 1 Hop Server
     loadstring(game:HttpGet("https://raw.githubusercontent.com/ATOMIC-HEIAN/ATOMIC-HUB-AUTOHOP/refs/heads/main/HOP%20SEVER"))()
 end)
 
--- CHẠY ANIMATION BÁ KHÍ BẬT MENU
 MainFrame.Size = UDim2.new(0, 420, 0, 250)
 TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 520, 0, 320), GroupTransparency = 0}):Play()
