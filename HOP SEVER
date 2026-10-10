@@ -5,13 +5,21 @@ local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Lighting = game:GetService("Lighting")
-local CoreGui = game:GetService("CoreGui")
 
 local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
 local JobId = game.JobId
 
--- Xóa UI cũ nếu có
+-- HÀM QUEUE ON TELEPORT
+local function queueScript()
+    local scriptCode = [[
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/ATOMIC-HEIAN/ATOMIC-HUB-AUTOHOP/refs/heads/main/HOP%20SEVER"))()
+    ]]
+    if queue_on_teleport then queue_on_teleport(scriptCode)
+    elseif syn and syn.queue_on_teleport then syn.queue_on_teleport(scriptCode)
+    elseif fluxus and fluxus.queue_on_teleport then fluxus.queue_on_teleport(scriptCode) end
+end
+
 if LocalPlayer.PlayerGui:FindFirstChild("ATOMIC_HUB_AutoHop") then
     LocalPlayer.PlayerGui.ATOMIC_HUB_AutoHop:Destroy()
 end
@@ -24,16 +32,11 @@ ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 -- ================= TÍNH NĂNG ẨN: GIẢM LAG & ĐỒ HỌA KHOAI LANG =================
 task.spawn(function()
     pcall(function()
-        -- Cấu hình Lighting nhẹ nhàng
         Lighting.GlobalShadows = false
         Lighting.FogEnd = 9e9
         for _, v in ipairs(Lighting:GetChildren()) do
-            if v:IsA("PostEffect") or v:IsA("Sky") or v:IsA("Atmosphere") then
-                v:Destroy()
-            end
+            if v:IsA("PostEffect") or v:IsA("Sky") or v:IsA("Atmosphere") then v:Destroy() end
         end
-
-        -- Xóa bỏ các hiệu ứng nặng (Particle, Trail, Beam, Fire, Smoke, Sparkles)
         local function clearHeavyEffects(parent)
             for _, obj in ipairs(parent:GetDescendants()) do
                 if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
@@ -44,7 +47,6 @@ task.spawn(function()
                 end
             end
         end
-
         clearHeavyEffects(workspace)
         workspace.DescendantAdded:Connect(function(obj)
             if obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles") then
@@ -54,14 +56,12 @@ task.spawn(function()
     end)
 end)
 
--- PALETTE MÀU SẮC
 local COLOR_BG = Color3.fromRGB(15, 15, 20)
 local COLOR_BLUE = Color3.fromRGB(0, 140, 255)
 local COLOR_DARK_BLUE = Color3.fromRGB(0, 80, 180)
 local COLOR_TEXT = Color3.fromRGB(255, 255, 255)
 local COLOR_CARD = Color3.fromRGB(22, 22, 30)
 
--- Lấy tên Game hiện tại
 local gameName = "Roblox Game"
 pcall(function()
     local info = MarketplaceService:GetProductInfo(PlaceId)
@@ -73,31 +73,25 @@ local function createAdminTitle(character)
     if not character then return end
     local head = character:WaitForChild("Head", 5)
     if not head then return end
+    if head:FindFirstChild("AtomicAdminTag") then head.AtomicAdminTag:Destroy() end
 
-    if head:FindFirstChild("AtomicAdminTag") then
-        head.AtomicAdminTag:Destroy()
-    end
-
-    local bbGui = Instance.new("BillboardGui")
+    local bbGui = Instance.new("BillboardGui", head)
     bbGui.Name = "AtomicAdminTag"
     bbGui.Adornee = head
     bbGui.Size = UDim2.new(0, 300, 0, 70)
     bbGui.StudsOffset = Vector3.new(0, 3.0, 0)
     bbGui.AlwaysOnTop = true
-    bbGui.Parent = head
 
-    local mainContainer = Instance.new("Frame")
+    local mainContainer = Instance.new("Frame", bbGui)
     mainContainer.Size = UDim2.new(1, 0, 1, 0)
     mainContainer.BackgroundTransparency = 1
-    mainContainer.Parent = bbGui
 
-    local listLayout = Instance.new("UIListLayout")
+    local listLayout = Instance.new("UIListLayout", mainContainer)
     listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
     listLayout.VerticalAlignment = Enum.VerticalAlignment.Center
     listLayout.Padding = UDim.new(0, 2)
-    listLayout.Parent = mainContainer
 
-    local adminText = Instance.new("TextLabel")
+    local adminText = Instance.new("TextLabel", mainContainer)
     adminText.Size = UDim2.new(1, 0, 0, 26)
     adminText.BackgroundTransparency = 1
     adminText.Text = "✨ ADMIN ✨"
@@ -105,10 +99,8 @@ local function createAdminTitle(character)
     adminText.Font = Enum.Font.GothamBlack
     adminText.TextSize = 20
     adminText.TextStrokeTransparency = 0.2
-    adminText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    adminText.Parent = mainContainer
 
-    local nameText = Instance.new("TextLabel")
+    local nameText = Instance.new("TextLabel", mainContainer)
     nameText.Size = UDim2.new(1, 0, 0, 22)
     nameText.BackgroundTransparency = 1
     nameText.Text = "(@" .. LocalPlayer.Name .. ")"
@@ -116,8 +108,6 @@ local function createAdminTitle(character)
     nameText.Font = Enum.Font.GothamBold
     nameText.TextSize = 15
     nameText.TextStrokeTransparency = 0.3
-    nameText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
-    nameText.Parent = mainContainer
 
     local step = 0
     RunService.Heartbeat:Connect(function(dt)
@@ -130,7 +120,7 @@ end
 if LocalPlayer.Character then createAdminTitle(LocalPlayer.Character) end
 LocalPlayer.CharacterAdded:Connect(createAdminTitle)
 
--- ================= ĐA NGÔN NGỮ (EN / VN) =================
+-- ================= ĐA NGÔN NGỮ =================
 local currentLang = "EN"
 local texts = {
     EN = {
@@ -176,11 +166,10 @@ local texts = {
         statusNotFound = "Không tìm thấy người chơi hoặc đang offline!"
     }
 }
-
 local function getTxt(key) return texts[currentLang][key] or key end
 
 -- NÚT FLOATING LANG
-local FloatLangBtn = Instance.new("TextButton")
+local FloatLangBtn = Instance.new("TextButton", ScreenGui)
 FloatLangBtn.Size = UDim2.new(0, 120, 0, 36)
 FloatLangBtn.Position = UDim2.new(0.5, -60, 0, 15)
 FloatLangBtn.BackgroundColor3 = COLOR_BG
@@ -188,48 +177,44 @@ FloatLangBtn.Text = "🌐 LANG: EN"
 FloatLangBtn.TextColor3 = COLOR_BLUE
 FloatLangBtn.Font = Enum.Font.GothamBold
 FloatLangBtn.TextSize = 13
-FloatLangBtn.Parent = ScreenGui
 Instance.new("UICorner", FloatLangBtn).CornerRadius = UDim.new(0, 8)
 local FloatStroke = Instance.new("UIStroke", FloatLangBtn)
 FloatStroke.Color = COLOR_BLUE
 FloatStroke.Thickness = 2
 
 -- 1. MÀN HÌNH LOADING
-local LoadingCanvas = Instance.new("CanvasGroup")
+local LoadingCanvas = Instance.new("CanvasGroup", ScreenGui)
 LoadingCanvas.Size = UDim2.new(0, 380, 0, 210)
 LoadingCanvas.Position = UDim2.new(0.5, -190, 0.5, -105)
 LoadingCanvas.BackgroundColor3 = COLOR_BG
-LoadingCanvas.Parent = ScreenGui
+LoadingCanvas.GroupTransparency = 1
 Instance.new("UICorner", LoadingCanvas).CornerRadius = UDim.new(0, 10)
 local LoadStroke = Instance.new("UIStroke", LoadingCanvas)
 LoadStroke.Color = COLOR_BLUE
 LoadStroke.Thickness = 2
 
-local LoadTitle = Instance.new("TextLabel")
+local LoadTitle = Instance.new("TextLabel", LoadingCanvas)
 LoadTitle.Size = UDim2.new(1, 0, 0, 32)
 LoadTitle.BackgroundTransparency = 1
 LoadTitle.Text = getTxt("loadTitle")
 LoadTitle.TextColor3 = COLOR_BLUE
 LoadTitle.Font = Enum.Font.GothamBold
 LoadTitle.TextSize = 15
-LoadTitle.Parent = LoadingCanvas
 
-local AvatarImg = Instance.new("ImageLabel")
+local AvatarImg = Instance.new("ImageLabel", LoadingCanvas)
 AvatarImg.Size = UDim2.new(0, 64, 0, 64)
 AvatarImg.Position = UDim2.new(0, 20, 0, 42)
 AvatarImg.BackgroundColor3 = COLOR_CARD
-AvatarImg.Parent = LoadingCanvas
 Instance.new("UICorner", AvatarImg).CornerRadius = UDim.new(1, 0)
 local AvatarStroke = Instance.new("UIStroke", AvatarImg)
 AvatarStroke.Color = COLOR_BLUE
 AvatarStroke.Thickness = 1.5
 
 pcall(function()
-    local content, _ = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
-    AvatarImg.Image = content
+    AvatarImg.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
 end)
 
-local UsernameLabel = Instance.new("TextLabel")
+local UsernameLabel = Instance.new("TextLabel", LoadingCanvas)
 UsernameLabel.Size = UDim2.new(1, -110, 0, 22)
 UsernameLabel.Position = UDim2.new(0, 95, 0, 45)
 UsernameLabel.BackgroundTransparency = 1
@@ -238,9 +223,8 @@ UsernameLabel.TextColor3 = COLOR_TEXT
 UsernameLabel.Font = Enum.Font.GothamBold
 UsernameLabel.TextSize = 15
 UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
-UsernameLabel.Parent = LoadingCanvas
 
-local GameLabel = Instance.new("TextLabel")
+local GameLabel = Instance.new("TextLabel", LoadingCanvas)
 GameLabel.Size = UDim2.new(1, -110, 0, 36)
 GameLabel.Position = UDim2.new(0, 95, 0, 68)
 GameLabel.BackgroundTransparency = 1
@@ -250,9 +234,8 @@ GameLabel.Font = Enum.Font.GothamMedium
 GameLabel.TextSize = 12
 GameLabel.TextXAlignment = Enum.TextXAlignment.Left
 GameLabel.TextWrapped = true
-GameLabel.Parent = LoadingCanvas
 
-local ProgressText = Instance.new("TextLabel")
+local ProgressText = Instance.new("TextLabel", LoadingCanvas)
 ProgressText.Size = UDim2.new(1, -40, 0, 20)
 ProgressText.Position = UDim2.new(0, 20, 0, 122)
 ProgressText.BackgroundTransparency = 1
@@ -260,23 +243,20 @@ ProgressText.Text = "Load menu: 1/100"
 ProgressText.TextColor3 = COLOR_BLUE
 ProgressText.Font = Enum.Font.GothamBold
 ProgressText.TextSize = 13
-ProgressText.Parent = LoadingCanvas
 
-local LoadingBarBg = Instance.new("Frame")
+local LoadingBarBg = Instance.new("Frame", LoadingCanvas)
 LoadingBarBg.Size = UDim2.new(1, -40, 0, 10)
 LoadingBarBg.Position = UDim2.new(0, 20, 0, 152)
 LoadingBarBg.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-LoadingBarBg.Parent = LoadingCanvas
 Instance.new("UICorner", LoadingBarBg).CornerRadius = UDim.new(0, 5)
 
-local LoadingBarFill = Instance.new("Frame")
+local LoadingBarFill = Instance.new("Frame", LoadingBarBg)
 LoadingBarFill.Size = UDim2.new(0, 0, 1, 0)
 LoadingBarFill.BackgroundColor3 = COLOR_BLUE
-LoadingBarFill.Parent = LoadingBarBg
 Instance.new("UICorner", LoadingBarFill).CornerRadius = UDim.new(0, 5)
 
 -- 2. GIAO DIỆN CHỌN CHẾ ĐỘ
-local ModeCanvas = Instance.new("CanvasGroup")
+local ModeCanvas = Instance.new("CanvasGroup", ScreenGui)
 ModeCanvas.Size = UDim2.new(0, 450, 0, 280)
 ModeCanvas.Position = UDim2.new(0.5, -225, 0.5, -140)
 ModeCanvas.BackgroundColor3 = COLOR_BG
@@ -284,24 +264,22 @@ ModeCanvas.Visible = false
 ModeCanvas.GroupTransparency = 1
 ModeCanvas.Active = true
 ModeCanvas.Draggable = true
-ModeCanvas.Parent = ScreenGui
 Instance.new("UICorner", ModeCanvas).CornerRadius = UDim.new(0, 10)
 local ModeStroke = Instance.new("UIStroke", ModeCanvas)
 ModeStroke.Color = COLOR_BLUE
 ModeStroke.Thickness = 2
 
-local ModeTitle = Instance.new("TextLabel")
+local ModeTitle = Instance.new("TextLabel", ModeCanvas)
 ModeTitle.Size = UDim2.new(1, 0, 0, 40)
 ModeTitle.BackgroundTransparency = 1
 ModeTitle.Text = getTxt("modeTitle")
 ModeTitle.TextColor3 = COLOR_BLUE
 ModeTitle.Font = Enum.Font.GothamBold
 ModeTitle.TextSize = 16
-ModeTitle.Parent = ModeCanvas
 
 local selectedMode = 1
 
-local Card1 = Instance.new("TextButton")
+local Card1 = Instance.new("TextButton", ModeCanvas)
 Card1.Size = UDim2.new(0, 170, 0, 140)
 Card1.Position = UDim2.new(0, 35, 0, 50)
 Card1.BackgroundColor3 = COLOR_CARD
@@ -309,13 +287,12 @@ Card1.Text = getTxt("card1")
 Card1.TextColor3 = COLOR_BLUE
 Card1.Font = Enum.Font.GothamBold
 Card1.TextSize = 14
-Card1.Parent = ModeCanvas
 Instance.new("UICorner", Card1).CornerRadius = UDim.new(0, 8)
 local Card1Stroke = Instance.new("UIStroke", Card1)
 Card1Stroke.Color = COLOR_BLUE
 Card1Stroke.Thickness = 2
 
-local Card2 = Instance.new("TextButton")
+local Card2 = Instance.new("TextButton", ModeCanvas)
 Card2.Size = UDim2.new(0, 170, 0, 140)
 Card2.Position = UDim2.new(0, 245, 0, 50)
 Card2.BackgroundColor3 = COLOR_CARD
@@ -323,7 +300,6 @@ Card2.Text = getTxt("card2")
 Card2.TextColor3 = COLOR_TEXT
 Card2.Font = Enum.Font.GothamBold
 Card2.TextSize = 14
-Card2.Parent = ModeCanvas
 Instance.new("UICorner", Card2).CornerRadius = UDim.new(0, 8)
 local Card2Stroke = Instance.new("UIStroke", Card2)
 Card2Stroke.Color = Color3.fromRGB(60, 60, 80)
@@ -332,8 +308,8 @@ Card2Stroke.Thickness = 1
 local function updateSelection(mode)
     selectedMode = mode
     if mode == 1 then
-        TweenService:Create(Card1, TweenInfo.new(0.2), {Size = UDim2.new(0, 180, 0, 148), Position = UDim2.new(0, 30, 0, 46)}):Play()
-        TweenService:Create(Card2, TweenInfo.new(0.2), {Size = UDim2.new(0, 170, 0, 140), Position = UDim2.new(0, 245, 0, 50)}):Play()
+        TweenService:Create(Card1, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 180, 0, 148), Position = UDim2.new(0, 30, 0, 46)}):Play()
+        TweenService:Create(Card2, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 170, 0, 140), Position = UDim2.new(0, 245, 0, 50)}):Play()
         Card1Stroke.Color = COLOR_BLUE
         Card1Stroke.Thickness = 2
         Card1.TextColor3 = COLOR_BLUE
@@ -341,8 +317,8 @@ local function updateSelection(mode)
         Card2Stroke.Thickness = 1
         Card2.TextColor3 = COLOR_TEXT
     else
-        TweenService:Create(Card2, TweenInfo.new(0.2), {Size = UDim2.new(0, 180, 0, 148), Position = UDim2.new(0, 240, 0, 46)}):Play()
-        TweenService:Create(Card1, TweenInfo.new(0.2), {Size = UDim2.new(0, 170, 0, 140), Position = UDim2.new(0, 35, 0, 50)}):Play()
+        TweenService:Create(Card2, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 180, 0, 148), Position = UDim2.new(0, 240, 0, 46)}):Play()
+        TweenService:Create(Card1, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Size = UDim2.new(0, 170, 0, 140), Position = UDim2.new(0, 35, 0, 50)}):Play()
         Card2Stroke.Color = COLOR_BLUE
         Card2Stroke.Thickness = 2
         Card2.TextColor3 = COLOR_BLUE
@@ -356,7 +332,7 @@ Card1.MouseButton1Click:Connect(function() updateSelection(1) end)
 Card2.MouseButton1Click:Connect(function() updateSelection(2) end)
 updateSelection(1)
 
-local ExecBtn = Instance.new("TextButton")
+local ExecBtn = Instance.new("TextButton", ModeCanvas)
 ExecBtn.Size = UDim2.new(1, -70, 0, 42)
 ExecBtn.Position = UDim2.new(0, 35, 1, -55)
 ExecBtn.BackgroundColor3 = COLOR_DARK_BLUE
@@ -364,13 +340,12 @@ ExecBtn.Text = getTxt("execBtn")
 ExecBtn.TextColor3 = COLOR_TEXT
 ExecBtn.Font = Enum.Font.GothamBold
 ExecBtn.TextSize = 14
-ExecBtn.Parent = ModeCanvas
 Instance.new("UICorner", ExecBtn).CornerRadius = UDim.new(0, 6)
 local ExecStroke = Instance.new("UIStroke", ExecBtn)
 ExecStroke.Color = COLOR_BLUE
 
 -- 3. MENU RIÊNG BIỆT
-local FeatureCanvas = Instance.new("CanvasGroup")
+local FeatureCanvas = Instance.new("CanvasGroup", ScreenGui)
 FeatureCanvas.Size = UDim2.new(0, 380, 0, 220)
 FeatureCanvas.Position = UDim2.new(0.5, -190, 0.5, -110)
 FeatureCanvas.BackgroundColor3 = COLOR_BG
@@ -378,64 +353,60 @@ FeatureCanvas.Visible = false
 FeatureCanvas.GroupTransparency = 1
 FeatureCanvas.Active = true
 FeatureCanvas.Draggable = true
-FeatureCanvas.Parent = ScreenGui
 Instance.new("UICorner", FeatureCanvas).CornerRadius = UDim.new(0, 8)
 local FeatureStroke = Instance.new("UIStroke", FeatureCanvas)
 FeatureStroke.Color = COLOR_BLUE
 FeatureStroke.Thickness = 2
 
-local MinBtn = Instance.new("TextButton")
+local MinBtn = Instance.new("TextButton", FeatureCanvas)
 MinBtn.Size = UDim2.new(0, 28, 0, 28)
 MinBtn.Position = UDim2.new(0, 6, 0, 6)
 MinBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
 MinBtn.Text = "−"
 MinBtn.TextColor3 = COLOR_TEXT
 MinBtn.Font = Enum.Font.GothamBold
-MinBtn.Parent = FeatureCanvas
 Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
 
-local CloseBtn = Instance.new("TextButton")
+local CloseBtn = Instance.new("TextButton", FeatureCanvas)
 CloseBtn.Size = UDim2.new(0, 28, 0, 28)
 CloseBtn.Position = UDim2.new(1, -34, 0, 6)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
 CloseBtn.Text = "✕"
 CloseBtn.TextColor3 = COLOR_TEXT
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.Parent = FeatureCanvas
 Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
 
 CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
-local ContentArea = Instance.new("Frame")
+local ContentArea = Instance.new("Frame", FeatureCanvas)
 ContentArea.Size = UDim2.new(1, 0, 1, -40)
 ContentArea.Position = UDim2.new(0, 0, 0, 40)
 ContentArea.BackgroundTransparency = 1
-ContentArea.Parent = FeatureCanvas
 
 local isMin = false
 MinBtn.MouseButton1Click:Connect(function()
     isMin = not isMin
     if isMin then
         ContentArea.Visible = false
-        FeatureCanvas.Size = UDim2.new(0, 380, 0, 40)
+        TweenService:Create(FeatureCanvas, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 380, 0, 40)}):Play()
         MinBtn.Text = "+"
     else
-        FeatureCanvas.Size = UDim2.new(0, 380, 0, 220)
+        TweenService:Create(FeatureCanvas, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 380, 0, 220)}):Play()
+        task.wait(0.15)
         ContentArea.Visible = true
         MinBtn.Text = "−"
     end
 end)
 
-local FeatureTitle = Instance.new("TextLabel")
+local FeatureTitle = Instance.new("TextLabel", FeatureCanvas)
 FeatureTitle.Size = UDim2.new(1, -80, 0, 40)
 FeatureTitle.Position = UDim2.new(0, 40, 0, 0)
 FeatureTitle.BackgroundTransparency = 1
 FeatureTitle.TextColor3 = COLOR_BLUE
 FeatureTitle.Font = Enum.Font.GothamBold
 FeatureTitle.TextSize = 14
-FeatureTitle.Parent = FeatureCanvas
 
-local Label1 = Instance.new("TextLabel")
+local Label1 = Instance.new("TextLabel", ContentArea)
 Label1.Size = UDim2.new(1, -30, 0, 20)
 Label1.Position = UDim2.new(0, 15, 0, 10)
 Label1.BackgroundTransparency = 1
@@ -443,42 +414,38 @@ Label1.TextColor3 = COLOR_TEXT
 Label1.Font = Enum.Font.GothamMedium
 Label1.TextSize = 12
 Label1.TextXAlignment = Enum.TextXAlignment.Left
-Label1.Parent = ContentArea
 
-local InputBox = Instance.new("TextBox")
+local InputBox = Instance.new("TextBox", ContentArea)
 InputBox.Size = UDim2.new(0, 220, 0, 36)
 InputBox.Position = UDim2.new(0.5, -110, 0, 35)
 InputBox.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
 InputBox.TextColor3 = COLOR_BLUE
 InputBox.Font = Enum.Font.GothamBold
 InputBox.TextSize = 16
-InputBox.Parent = ContentArea
 Instance.new("UICorner", InputBox).CornerRadius = UDim.new(0, 6)
 local BoxStroke = Instance.new("UIStroke", InputBox)
 BoxStroke.Color = COLOR_BLUE
 
-local HintLabel = Instance.new("TextLabel")
+local HintLabel = Instance.new("TextLabel", ContentArea)
 HintLabel.Size = UDim2.new(1, -30, 0, 20)
 HintLabel.Position = UDim2.new(0, 15, 0, 78)
 HintLabel.BackgroundTransparency = 1
 HintLabel.TextColor3 = Color3.fromRGB(170, 170, 180)
 HintLabel.Font = Enum.Font.Gotham
 HintLabel.TextSize = 11
-HintLabel.Parent = ContentArea
 
-local ActionBtn = Instance.new("TextButton")
+local ActionBtn = Instance.new("TextButton", ContentArea)
 ActionBtn.Size = UDim2.new(1, -30, 0, 42)
 ActionBtn.Position = UDim2.new(0, 15, 1, -52)
 ActionBtn.BackgroundColor3 = COLOR_DARK_BLUE
 ActionBtn.TextColor3 = COLOR_TEXT
 ActionBtn.Font = Enum.Font.GothamBold
 ActionBtn.TextSize = 14
-ActionBtn.Parent = ContentArea
 Instance.new("UICorner", ActionBtn).CornerRadius = UDim.new(0, 6)
 local ActionStroke = Instance.new("UIStroke", ActionBtn)
 ActionStroke.Color = COLOR_BLUE
 
-local StatusText = Instance.new("TextLabel")
+local StatusText = Instance.new("TextLabel", ScreenGui)
 StatusText.Size = UDim2.new(1, 0, 0, 80)
 StatusText.Position = UDim2.new(0, 0, 0.4, 0)
 StatusText.BackgroundTransparency = 1
@@ -488,12 +455,23 @@ StatusText.TextSize = 26
 StatusText.TextStrokeTransparency = 0.5
 StatusText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 StatusText.Visible = false
-StatusText.Parent = ScreenGui
 
+-- ANIMATION KHI BẤM NÚT EXECUTE
 ExecBtn.MouseButton1Click:Connect(function()
+    -- Hiệu ứng co nút
+    TweenService:Create(ExecBtn, TweenInfo.new(0.1), {Size = UDim2.new(1, -80, 0, 38)}):Play()
+    task.wait(0.1)
+    TweenService:Create(ExecBtn, TweenInfo.new(0.1), {Size = UDim2.new(1, -70, 0, 42)}):Play()
+
+    -- Ẩn Mode Canvas với hiệu ứng Fade Out + Scale nhỏ
+    TweenService:Create(ModeCanvas, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {GroupTransparency = 1}):Play()
+    task.wait(0.3)
     ModeCanvas.Visible = false
+
+    -- Hiện Feature Canvas với hiệu ứng Pop Bounce
     FeatureCanvas.Visible = true
-    TweenService:Create(FeatureCanvas, TweenInfo.new(0.5), {GroupTransparency = 0}):Play()
+    FeatureCanvas.Size = UDim2.new(0, 300, 0, 180)
+    TweenService:Create(FeatureCanvas, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 380, 0, 220), GroupTransparency = 0}):Play()
 
     if selectedMode == 1 then
         FeatureTitle.Text = getTxt("hopTitle")
@@ -512,48 +490,39 @@ ExecBtn.MouseButton1Click:Connect(function()
 end)
 
 FloatLangBtn.MouseButton1Click:Connect(function()
-    if currentLang == "EN" then
-        currentLang = "VN"
-        FloatLangBtn.Text = "🌐 LANG: VN"
-    else
-        currentLang = "EN"
-        FloatLangBtn.Text = "🌐 LANG: EN"
-    end
+    currentLang = (currentLang == "EN") and "VN" or "EN"
+    FloatLangBtn.Text = "🌐 LANG: " .. currentLang
     
     ModeTitle.Text = getTxt("modeTitle")
     Card1.Text = getTxt("card1")
     Card2.Text = getTxt("card2")
     ExecBtn.Text = getTxt("execBtn")
-    
-    if selectedMode == 1 then
-        FeatureTitle.Text = getTxt("hopTitle")
-        Label1.Text = getTxt("inputLabel")
-        ActionBtn.Text = getTxt("hopBtn")
-    else
-        FeatureTitle.Text = getTxt("tpTitle")
-        Label1.Text = getTxt("inputPlayerLabel")
-        ActionBtn.Text = getTxt("tpBtn")
-    end
 end)
 
--- Run Loading
+-- CHẠY HIỆU ỨNG LOADING BAN ĐẦU
 task.spawn(function()
+    LoadingCanvas.Visible = true
+    TweenService:Create(LoadingCanvas, TweenInfo.new(0.4, Enum.EasingStyle.Back), {GroupTransparency = 0}):Play()
     TweenService:Create(LoadingBarFill, TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)}):Play()
+    
     for i = 1, 100 do
         ProgressText.Text = "Load menu: " .. i .. "/100"
         task.wait(0.02)
     end
-    local fadeOut = TweenService:Create(LoadingCanvas, TweenInfo.new(0.5), {GroupTransparency = 1})
-    fadeOut:Play()
-    fadeOut.Completed:Wait()
+
+    TweenService:Create(LoadingCanvas, TweenInfo.new(0.3), {GroupTransparency = 1}):Play()
+    task.wait(0.3)
     LoadingCanvas:Destroy()
 
-    task.wait(2)
+    task.wait(0.5)
+
+    -- Mở Menu chọn chế độ với hiệu ứng pop-up bá khí
     ModeCanvas.Visible = true
-    TweenService:Create(ModeCanvas, TweenInfo.new(1.2), {GroupTransparency = 0}):Play()
+    ModeCanvas.Size = UDim2.new(0, 350, 0, 220)
+    TweenService:Create(ModeCanvas, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 450, 0, 280), GroupTransparency = 0}):Play()
 end)
 
--- LOGIC AUTO HOP (Tự hiện lại menu khi sang server mới)
+-- LOGIC AUTO HOP
 local function HopServer(targetCount)
     FeatureCanvas.Visible = false
     StatusText.Visible = true
@@ -586,6 +555,7 @@ local function HopServer(targetCount)
 
     if foundServer then
         StatusText.Text = getTxt("statusFound")
+        queueScript()
         TeleportService:TeleportToPlaceInstance(PlaceId, foundServer, LocalPlayer)
     else
         StatusText.Text = getTxt("statusNotFound")
@@ -649,6 +619,7 @@ local function TpToGlobalPlayer(rawInput)
 
     if targetJobId then
         StatusText.Text = getTxt("statusTPFound")
+        queueScript()
         TeleportService:TeleportToPlaceInstance(targetPlaceId or PlaceId, targetJobId, LocalPlayer)
     else
         StatusText.Text = getTxt("statusNotFound")
@@ -659,6 +630,10 @@ local function TpToGlobalPlayer(rawInput)
 end
 
 ActionBtn.MouseButton1Click:Connect(function()
+    TweenService:Create(ActionBtn, TweenInfo.new(0.1), {Size = UDim2.new(1, -40, 0, 38)}):Play()
+    task.wait(0.1)
+    TweenService:Create(ActionBtn, TweenInfo.new(0.1), {Size = UDim2.new(1, -30, 0, 42)}):Play()
+
     if selectedMode == 1 then
         local num = tonumber(InputBox.Text) or 1
         HopServer(num)
