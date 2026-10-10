@@ -1,0 +1,365 @@
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local Lighting = game:GetService("Lighting")
+local VirtualUser = game:GetService("VirtualUser")
+
+local LocalPlayer = Players.LocalPlayer
+
+-- Xóa UI cũ nếu có
+if LocalPlayer.PlayerGui:FindFirstChild("ATOMIC_HUB_Egg") then
+    LocalPlayer.PlayerGui.ATOMIC_HUB_Egg:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ATOMIC_HUB_Egg"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- PALETTE MÀU SẮC ATOMIC
+local COLOR_BG = Color3.fromRGB(15, 15, 20)
+local COLOR_PANEL = Color3.fromRGB(22, 22, 30)
+local COLOR_BLUE = Color3.fromRGB(0, 140, 255)
+local COLOR_DARK_BLUE = Color3.fromRGB(0, 80, 180)
+local COLOR_TEXT = Color3.fromRGB(255, 255, 255)
+local COLOR_GRAY = Color3.fromRGB(120, 120, 140)
+
+-- ================= CHỮ ADMIN VÀNG LẤP LÁNH ✨ =================
+local function createAdminTitle(character)
+    if not character then return end
+    local head = character:WaitForChild("Head", 5)
+    if not head then return end
+    if head:FindFirstChild("AtomicAdminTag") then head.AtomicAdminTag:Destroy() end
+
+    local bbGui = Instance.new("BillboardGui", head)
+    bbGui.Name = "AtomicAdminTag"
+    bbGui.Adornee = head
+    bbGui.Size = UDim2.new(0, 300, 0, 70)
+    bbGui.StudsOffset = Vector3.new(0, 3.0, 0)
+    bbGui.AlwaysOnTop = true
+
+    local mainContainer = Instance.new("Frame", bbGui)
+    mainContainer.Size = UDim2.new(1, 0, 1, 0)
+    mainContainer.BackgroundTransparency = 1
+
+    local listLayout = Instance.new("UIListLayout", mainContainer)
+    listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    listLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+
+    local adminText = Instance.new("TextLabel", mainContainer)
+    adminText.Size = UDim2.new(1, 0, 0, 26)
+    adminText.BackgroundTransparency = 1
+    adminText.Text = "✨ ADMIN ✨"
+    adminText.TextColor3 = Color3.fromRGB(255, 215, 0)
+    adminText.Font = Enum.Font.GothamBlack
+    adminText.TextSize = 20
+    adminText.TextStrokeTransparency = 0.2
+
+    local nameText = Instance.new("TextLabel", mainContainer)
+    nameText.Size = UDim2.new(1, 0, 0, 22)
+    nameText.BackgroundTransparency = 1
+    nameText.Text = "(@" .. LocalPlayer.Name .. ")"
+    nameText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameText.Font = Enum.Font.GothamBold
+    nameText.TextSize = 15
+    nameText.TextStrokeTransparency = 0.3
+
+    local step = 0
+    RunService.Heartbeat:Connect(function(dt)
+        step = step + dt * 4
+        local shine = (math.sin(step) + 1) / 2
+        adminText.TextColor3 = Color3.fromRGB(255, 180 + (75 * shine), 30 * shine)
+    end)
+end
+
+if LocalPlayer.Character then createAdminTitle(LocalPlayer.Character) end
+LocalPlayer.CharacterAdded:Connect(createAdminTitle)
+
+-- ================= TỰ ĐỘNG BẬT: ANTI AFK / ANTI RAGDOLL / ANTI TRAP =================
+task.spawn(function()
+    -- Anti AFK
+    LocalPlayer.Idled:Connect(function()
+        VirtualUser:Button2Down(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+        task.wait(1)
+        VirtualUser:Button2Up(Vector2.new(0, 0), workspace.CurrentCamera.CFrame)
+    end)
+
+    -- Anti Ragdoll & Anti Trap
+    RunService.Stepped:Connect(function()
+        pcall(function()
+            if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
+                local hum = LocalPlayer.Character.Humanoid
+                hum:SetStateEnabled(Enum.HumanoidStateType.Ragdoll, false)
+                hum:SetStateEnabled(Enum.HumanoidStateType.FallingDown, false)
+                if hum.PlatformStand then hum.PlatformStand = false end
+            end
+        end)
+    end)
+end)
+
+-- ================= MAIN KHUNG MENU BÁ KHÍ =================
+local MainFrame = Instance.new("CanvasGroup", ScreenGui)
+MainFrame.Size = UDim2.new(0, 520, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -260, 0.5, -160)
+MainFrame.BackgroundColor3 = COLOR_BG
+MainFrame.GroupTransparency = 1
+MainFrame.Active = true
+MainFrame.Draggable = true
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0, 10)
+local MainStroke = Instance.new("UIStroke", MainFrame)
+MainStroke.Color = COLOR_BLUE
+MainStroke.Thickness = 2
+
+-- TOP BAR
+local TopBar = Instance.new("Frame", MainFrame)
+TopBar.Size = UDim2.new(1, 0, 0, 35)
+TopBar.BackgroundColor3 = COLOR_PANEL
+
+local TitleLabel = Instance.new("TextLabel", TopBar)
+TitleLabel.Size = UDim2.new(1, -70, 1, 0)
+TitleLabel.Position = UDim2.new(0, 15, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "ATOMIC HUB - STEAL AN EGG 🥶"
+TitleLabel.TextColor3 = COLOR_BLUE
+TitleLabel.Font = Enum.Font.GothamBold
+TitleLabel.TextSize = 14
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local CloseBtn = Instance.new("TextButton", TopBar)
+CloseBtn.Size = UDim2.new(0, 25, 0, 25)
+CloseBtn.Position = UDim2.new(1, -30, 0, 5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = COLOR_TEXT
+CloseBtn.Font = Enum.Font.GothamBold
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
+
+-- SIDEBAR TAB BÊN TRÁI
+local SideBar = Instance.new("Frame", MainFrame)
+SideBar.Size = UDim2.new(0, 120, 1, -35)
+SideBar.Position = UDim2.new(0, 0, 0, 35)
+SideBar.BackgroundColor3 = COLOR_PANEL
+
+local SideLayout = Instance.new("UIListLayout", SideBar)
+SideLayout.Padding = UDim.new(0, 8)
+SideLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+Instance.new("UIPadding", SideBar).PaddingTop = UDim.new(0, 10)
+
+-- PHẦN NỘI DUNG (CONTAINER)
+local ContentContainer = Instance.new("Frame", MainFrame)
+ContentContainer.Size = UDim2.new(1, -125, 1, -40)
+ContentContainer.Position = UDim2.new(0, 125, 0, 38)
+ContentContainer.BackgroundTransparency = 1
+
+-- 1. TAB MAIN PAGE
+local TabMainPage = Instance.new("ScrollingFrame", ContentContainer)
+TabMainPage.Size = UDim2.new(1, 0, 1, 0)
+TabMainPage.BackgroundTransparency = 1
+TabMainPage.ScrollBarThickness = 4
+TabMainPage.ScrollBarImageColor3 = COLOR_BLUE
+TabMainPage.Visible = true
+
+local MainList = Instance.new("UIListLayout", TabMainPage)
+MainList.Padding = UDim.new(0, 8)
+
+-- 2. TAB SETTING PAGE
+local TabSettingPage = Instance.new("ScrollingFrame", ContentContainer)
+TabSettingPage.Size = UDim2.new(1, 0, 1, 0)
+TabSettingPage.BackgroundTransparency = 1
+TabSettingPage.ScrollBarThickness = 4
+TabSettingPage.ScrollBarImageColor3 = COLOR_BLUE
+TabSettingPage.Visible = false
+
+local SettingList = Instance.new("UIListLayout", TabSettingPage)
+SettingList.Padding = UDim.new(0, 8)
+
+-- NÚT CHUYỂN TAB SIDEBAR
+local function createTabBtn(name, targetPage)
+    local btn = Instance.new("TextButton", SideBar)
+    btn.Size = UDim2.new(0, 105, 0, 35)
+    btn.BackgroundColor3 = COLOR_BG
+    btn.Text = name
+    btn.TextColor3 = COLOR_GRAY
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 13
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
+    local btnStroke = Instance.new("UIStroke", btn)
+    btnStroke.Color = Color3.fromRGB(40, 40, 50)
+
+    btn.MouseButton1Click:Connect(function()
+        for _, child in ipairs(SideBar:GetChildren()) do
+            if child:IsA("TextButton") then
+                child.TextColor3 = COLOR_GRAY
+                child.BackgroundColor3 = COLOR_BG
+                if child:FindFirstChildOfClass("UIStroke") then
+                    child:FindFirstChildOfClass("UIStroke").Color = Color3.fromRGB(40, 40, 50)
+                end
+            end
+        end
+        btn.TextColor3 = COLOR_BLUE
+        btn.BackgroundColor3 = COLOR_PANEL
+        btnStroke.Color = COLOR_BLUE
+
+        TabMainPage.Visible = false
+        TabSettingPage.Visible = false
+        targetPage.Visible = true
+
+        -- Animation nảy trang
+        targetPage.Position = UDim2.new(0, 10, 0, 0)
+        TweenService:Create(targetPage, TweenInfo.new(0.3, Enum.EasingStyle.Back), {Position = UDim2.new(0, 0, 0, 0)}):Play()
+    end)
+
+    return btn
+end
+
+local MainTabBtn = createTabBtn("MAIN", TabMainPage)
+local SettingTabBtn = createTabBtn("SETTING", TabSettingPage)
+
+-- Active mặc định Tab Main
+MainTabBtn.TextColor3 = COLOR_BLUE
+MainTabBtn.BackgroundColor3 = COLOR_PANEL
+MainTabBtn:FindFirstChildOfClass("UIStroke").Color = COLOR_BLUE
+
+-- ================= TẠO TÍNH NĂNG TRONG TAB MAIN =================
+
+local function createToggle(parent, titleText, callback)
+    local frame = Instance.new("Frame", parent)
+    frame.Size = UDim2.new(1, -10, 0, 36)
+    frame.BackgroundColor3 = COLOR_PANEL
+    Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 6)
+
+    local lbl = Instance.new("TextLabel", frame)
+    lbl.Size = UDim2.new(1, -50, 1, 0)
+    lbl.Position = UDim2.new(0, 10, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = titleText
+    lbl.TextColor3 = COLOR_TEXT
+    lbl.Font = Enum.Font.GothamMedium
+    lbl.TextSize = 12
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+
+    local toggleBtn = Instance.new("TextButton", frame)
+    toggleBtn.Size = UDim2.new(0, 32, 0, 20)
+    toggleBtn.Position = UDim2.new(1, -40, 0.5, -10)
+    toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+    toggleBtn.Text = ""
+    Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(1, 0)
+
+    local circle = Instance.new("Frame", toggleBtn)
+    circle.Size = UDim2.new(0, 16, 0, 16)
+    circle.Position = UDim2.new(0, 2, 0.5, -8)
+    circle.BackgroundColor3 = COLOR_TEXT
+    Instance.new("UICorner", circle).CornerRadius = UDim.new(1, 0)
+
+    local state = false
+    toggleBtn.MouseButton1Click:Connect(function()
+        state = not state
+        if state then
+            TweenService:Create(circle, TweenInfo.new(0.2), {Position = UDim2.new(1, -18, 0.5, -8)}):Play()
+            toggleBtn.BackgroundColor3 = COLOR_BLUE
+        else
+            TweenService:Create(circle, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0.5, -8)}):Play()
+            toggleBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
+        end
+        callback(state)
+    end)
+end
+
+-- 1. CHỌN RARITY EGG
+createToggle(TabMainPage, "Auto Steal (Chọn Rarity)", function(v) end)
+
+-- 2. CHỌN KHU VỰC (SELECT ALL ZONES)
+local ZoneBtn = Instance.new("TextButton", TabMainPage)
+ZoneBtn.Size = UDim2.new(1, -10, 0, 36)
+ZoneBtn.BackgroundColor3 = COLOR_PANEL
+ZoneBtn.Text = "🌐 Chọn tất cả khu vực hiện có (Select All)"
+ZoneBtn.TextColor3 = COLOR_BLUE
+ZoneBtn.Font = Enum.Font.GothamBold
+ZoneBtn.TextSize = 12
+Instance.new("UICorner", ZoneBtn).CornerRadius = UDim.new(0, 6)
+
+-- 3. CHỌN KIỂU STEAL (STEAL METHOD)
+local MethodBtn = Instance.new("TextButton", TabMainPage)
+MethodBtn.Size = UDim2.new(1, -10, 0, 36)
+MethodBtn.BackgroundColor3 = COLOR_PANEL
+MethodBtn.Text = "🚀 Kiểu Steal: [ Fly ]"
+MethodBtn.TextColor3 = COLOR_TEXT
+MethodBtn.Font = Enum.Font.GothamBold
+MethodBtn.TextSize = 12
+Instance.new("UICorner", MethodBtn).CornerRadius = UDim.new(0, 6)
+
+local methods = {"Fly", "Chạy cơ bản", "Fly nhưng dưới đất"}
+local currentMethodIndex = 1
+MethodBtn.MouseButton1Click:Connect(function()
+    currentMethodIndex = currentMethodIndex + 1
+    if currentMethodIndex > #methods then currentMethodIndex = 1 end
+    MethodBtn.Text = "🚀 Kiểu Steal: [ " .. methods[currentMethodIndex] .. " ]"
+end)
+
+-- 4. AUTO TREADMILL (MÁY CHẠY BỘ - TỰ DỪNG KHI CÓ TRỨNG)
+createToggle(TabMainPage, "Tự lên máy chạy bộ (Auto Steal Intercept)", function(state)
+    -- Logic tự chạy máy, khi phát hiện Trứng xuất hiện -> Ngắt máy -> Đi steal -> Bật lại
+end)
+
+-- ================= TẠO TÍNH NĂNG TRONG TAB SETTING =================
+
+-- 1. ANTI LAG
+createToggle(TabSettingPage, "Anti Lag (Tối ưu nhẹ)", function(state)
+    if state then
+        Lighting.GlobalShadows = false
+    end
+end)
+
+-- 2. NO SHADOW
+createToggle(TabSettingPage, "No Shadow (Tắt đổ bóng)", function(state)
+    Lighting.GlobalShadows = not state
+end)
+
+-- 3. SUPER ANTI LAG (MỌI THỨ MÀU XÁM)
+createToggle(TabSettingPage, "Super Anti Lag (Khoai lang xám)", function(state)
+    if state then
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                obj.Material = Enum.Material.SmoothPlastic
+                obj.Color = Color3.fromRGB(150, 150, 150)
+            end
+        end
+    end
+end)
+
+-- 4. HOẠT ĐỘNG ĐẶC BIỆT: HOP SERVER SCRIPT 1
+local HopLabel = Instance.new("TextLabel", TabSettingPage)
+HopLabel.Size = UDim2.new(1, -10, 0, 20)
+HopLabel.BackgroundTransparency = 1
+HopLabel.Text = "⭐ Tính năng đặc biệt:"
+HopLabel.TextColor3 = COLOR_BLUE
+HopLabel.Font = Enum.Font.GothamBold
+HopLabel.TextSize = 12
+HopLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local ExecHopBtn = Instance.new("TextButton", TabSettingPage)
+ExecHopBtn.Size = UDim2.new(1, -10, 0, 38)
+ExecHopBtn.BackgroundColor3 = COLOR_DARK_BLUE
+ExecHopBtn.Text = "EXECUTE ATOMIC AUTO HOP SCRIPT 1 🚀"
+ExecHopBtn.TextColor3 = COLOR_TEXT
+ExecHopBtn.Font = Enum.Font.GothamBold
+ExecHopBtn.TextSize = 12
+Instance.new("UICorner", ExecHopBtn).CornerRadius = UDim.new(0, 6)
+local ExecStroke = Instance.new("UIStroke", ExecHopBtn)
+ExecStroke.Color = COLOR_BLUE
+
+ExecHopBtn.MouseButton1Click:Connect(function()
+    TweenService:Create(ExecHopBtn, TweenInfo.new(0.1), {Size = UDim2.new(1, -20, 0, 34)}):Play()
+    task.wait(0.1)
+    TweenService:Create(ExecHopBtn, TweenInfo.new(0.1), {Size = UDim2.new(1, -10, 0, 38)}):Play()
+    
+    -- Chạy Script 1 Hop Server
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/ATOMIC-HEIAN/ATOMIC-HUB-AUTOHOP/refs/heads/main/HOP%20SEVER"))()
+end)
+
+-- CHẠY ANIMATION BÁ KHÍ BẬT MENU
+MainFrame.Size = UDim2.new(0, 420, 0, 250)
+TweenService:Create(MainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 520, 0, 320), GroupTransparency = 0}):Play()
