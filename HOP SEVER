@@ -26,6 +26,7 @@ local COLOR_DARK_BLUE = Color3.fromRGB(0, 80, 180)
 local COLOR_TEXT = Color3.fromRGB(255, 255, 255)
 local COLOR_RED = Color3.fromRGB(255, 50, 50)
 local COLOR_DISABLED = Color3.fromRGB(50, 50, 60)
+local COLOR_CARD = Color3.fromRGB(22, 22, 30)
 
 -- Lấy tên Trò chơi hiện tại
 local gameName = "Roblox Game"
@@ -109,29 +110,40 @@ local texts = {
     EN = {
         loadTitle = "ATOMIC HUB - LOADING...",
         gameLabel = "Game: ",
-        mainTitle = "ATOMIC HUB - AutoHopServer",
+        mainTitle = "ATOMIC HUB - Control Panel",
+        tab1Title = "Auto Hop Server",
+        tab2Title = "TP to Player in Server",
         inputLabel = "Enter target player count (min: 1):",
+        inputPlayerLabel = "Enter player name (name:abcxyz):",
         maxInfo = "Max server capacity (max): ",
-        errorLimit = "⚠️ Exceeded server limit (Max: ",
+        errorLimit = "⚠️ Exceeded limit (Max: ",
         hopBtn = "AUTO HOP SERVER",
+        tpBtn = "LET TELEPORT",
         statusHop = "Reading server data to hop...",
+        statusTP = "Searching if the player is active...",
+        statusTPFound = "Teleporting to player's server...",
         statusRetry = "Scanning server list (Retrying)...",
         statusFound = "Found server with ",
-        statusNotFound = "No server found with exactly ",
+        statusNotFound = "No server found with target criteria!",
         playersUnit = " players"
     },
     VN = {
         loadTitle = "ATOMIC HUB - ĐANG TẢI...",
         gameLabel = "Trò chơi: ",
-        mainTitle = "ATOMIC HUB - Tự Động Hop Server",
+        mainTitle = "ATOMIC HUB - Bảng Điều Khiển",
+        tab1Title = "Tự Động Hop Server",
+        tab2Title = "Dịch Chuyển Đến Người Chơi",
         inputLabel = "Nhập số lượng người chơi muốn vào (min: 1):",
+        inputPlayerLabel = "Nhập tên người chơi (name:abcxyz):",
         maxInfo = "Sức chứa tối đa của Server (max): ",
-        errorLimit = "⚠️ Quá giới hạn server (Tối đa: ",
+        errorLimit = "⚠️ Quá giới hạn (Tối đa: ",
         hopBtn = "BẮT ĐẦU HOP SERVER",
         statusHop = "Đang đọc các dữ liệu sever để hop...",
+        statusTP = "Đang tìm kiếm người chơi có hoạt động không...",
+        statusTPFound = "Đang chuyển đến sever của người chơi...",
         statusRetry = "Đang quét danh sách Server (Thử lại)...",
         statusFound = "Đã tìm thấy Server ",
-        statusNotFound = "Không tìm thấy Server có đúng ",
+        statusNotFound = "Không tìm thấy Server thỏa mãn điều kiện!",
         playersUnit = " người"
     }
 }
@@ -182,11 +194,10 @@ LoadTitle.Font = Enum.Font.GothamBold
 LoadTitle.TextSize = 15
 LoadTitle.Parent = LoadingCanvas
 
--- Hình ảnh Avatar Player
 local AvatarImg = Instance.new("ImageLabel")
 AvatarImg.Size = UDim2.new(0, 64, 0, 64)
 AvatarImg.Position = UDim2.new(0, 20, 0, 42)
-AvatarImg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+AvatarImg.BackgroundColor3 = COLOR_CARD
 AvatarImg.Parent = LoadingCanvas
 Instance.new("UICorner", AvatarImg).CornerRadius = UDim.new(1, 0)
 
@@ -249,10 +260,10 @@ LoadingBarFill.BorderSizePixel = 0
 LoadingBarFill.Parent = LoadingBarBg
 Instance.new("UICorner", LoadingBarFill).CornerRadius = UDim.new(0, 5)
 
--- ================= 2. MENU CHÍNH =================
+-- ================= 2. MENU CHÍNH (2 PHẦN: TRÁI AUTO HOP, PHẢI TP PLAYER) =================
 local MainCanvas = Instance.new("CanvasGroup")
-MainCanvas.Size = UDim2.new(0, 380, 0, 220)
-MainCanvas.Position = UDim2.new(0.5, -190, 0.5, -110)
+MainCanvas.Size = UDim2.new(0, 680, 0, 280)
+MainCanvas.Position = UDim2.new(0.5, -340, 0.5, -140)
 MainCanvas.BackgroundColor3 = COLOR_BG
 MainCanvas.BorderSizePixel = 0
 MainCanvas.Visible = false
@@ -261,7 +272,7 @@ MainCanvas.Active = true
 MainCanvas.Draggable = true
 MainCanvas.Parent = ScreenGui
 
-Instance.new("UICorner", MainCanvas).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", MainCanvas).CornerRadius = UDim.new(0, 10)
 
 local MainStroke = Instance.new("UIStroke")
 MainStroke.Color = COLOR_BLUE
@@ -270,7 +281,7 @@ MainStroke.Parent = MainCanvas
 
 local MinimizeBtn = Instance.new("TextButton")
 MinimizeBtn.Size = UDim2.new(0, 28, 0, 28)
-MinimizeBtn.Position = UDim2.new(0, 6, 0, 6)
+MinimizeBtn.Position = UDim2.new(0, 8, 0, 8)
 MinimizeBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
 MinimizeBtn.Text = "−"
 MinimizeBtn.TextColor3 = COLOR_TEXT
@@ -286,7 +297,7 @@ MinStroke.Parent = MinimizeBtn
 
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0, 28, 0, 28)
-CloseBtn.Position = UDim2.new(1, -34, 0, 6)
+CloseBtn.Position = UDim2.new(1, -36, 0, 8)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
 CloseBtn.Text = "✕"
 CloseBtn.TextColor3 = COLOR_TEXT
@@ -301,8 +312,8 @@ end)
 
 local isMinimized = false
 local ContentContainer = Instance.new("Frame")
-ContentContainer.Size = UDim2.new(1, 0, 1, -40)
-ContentContainer.Position = UDim2.new(0, 0, 0, 40)
+ContentContainer.Size = UDim2.new(1, 0, 1, -45)
+ContentContainer.Position = UDim2.new(0, 0, 0, 45)
 ContentContainer.BackgroundTransparency = 1
 ContentContainer.Parent = MainCanvas
 
@@ -310,46 +321,71 @@ MinimizeBtn.MouseButton1Click:Connect(function()
     isMinimized = not isMinimized
     if isMinimized then
         ContentContainer.Visible = false
-        MainCanvas.Size = UDim2.new(0, 380, 0, 40)
+        MainCanvas.Size = UDim2.new(0, 680, 0, 45)
         MinimizeBtn.Text = "+"
     else
-        MainCanvas.Size = UDim2.new(0, 380, 0, 220)
+        MainCanvas.Size = UDim2.new(0, 680, 0, 280)
         ContentContainer.Visible = true
         MinimizeBtn.Text = "−"
     end
 end)
 
 local MainTitle = Instance.new("TextLabel")
-MainTitle.Size = UDim2.new(1, -80, 0, 40)
-MainTitle.Position = UDim2.new(0, 40, 0, 0)
+MainTitle.Size = UDim2.new(1, -100, 0, 40)
+MainTitle.Position = UDim2.new(0, 50, 0, 2)
 MainTitle.BackgroundTransparency = 1
 MainTitle.Text = getTxt("mainTitle")
 MainTitle.TextColor3 = COLOR_BLUE
 MainTitle.Font = Enum.Font.GothamBold
-MainTitle.TextSize = 14
+MainTitle.TextSize = 16
 MainTitle.TextXAlignment = Enum.TextXAlignment.Center
 MainTitle.Parent = MainCanvas
 
+-- KHUNG TRÁI: AUTO HOP SERVER
+local LeftCard = Instance.new("Frame")
+LeftCard.Size = UDim2.new(0.48, 0, 1, -20)
+LeftCard.Position = UDim2.new(0, 10, 0, 5)
+LeftCard.BackgroundColor3 = COLOR_CARD
+LeftCard.BorderSizePixel = 0
+LeftCard.Parent = ContentContainer
+Instance.new("UICorner", LeftCard).CornerRadius = UDim.new(0, 8)
+
+local LeftStroke = Instance.new("UIStroke")
+LeftStroke.Color = COLOR_BLUE
+LeftStroke.Thickness = 1
+LeftStroke.Parent = LeftCard
+
+local Tab1Title = Instance.new("TextLabel")
+Tab1Title.Size = UDim2.new(1, 0, 0, 30)
+Tab1Title.Position = UDim2.new(0, 0, 0, 10)
+Tab1Title.BackgroundTransparency = 1
+Tab1Title.Text = getTxt("tab1Title")
+Tab1Title.TextColor3 = COLOR_BLUE
+Tab1Title.Font = Enum.Font.GothamBold
+Tab1Title.TextSize = 14
+Tab1Title.Parent = LeftCard
+
 local InputLabel = Instance.new("TextLabel")
-InputLabel.Size = UDim2.new(1, -30, 0, 20)
-InputLabel.Position = UDim2.new(0, 15, 0, 10)
+InputLabel.Size = UDim2.new(1, -20, 0, 30)
+InputLabel.Position = UDim2.new(0, 10, 0, 45)
 InputLabel.BackgroundTransparency = 1
 InputLabel.Text = getTxt("inputLabel")
 InputLabel.TextColor3 = COLOR_TEXT
 InputLabel.Font = Enum.Font.GothamMedium
-InputLabel.TextSize = 12
+InputLabel.TextSize = 11
+InputLabel.TextWrapped = true
 InputLabel.TextXAlignment = Enum.TextXAlignment.Left
-InputLabel.Parent = ContentContainer
+InputLabel.Parent = LeftCard
 
 local TargetInput = Instance.new("TextBox")
-TargetInput.Size = UDim2.new(0, 120, 0, 36)
-TargetInput.Position = UDim2.new(0.5, -60, 0, 35)
-TargetInput.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+TargetInput.Size = UDim2.new(1, -20, 0, 38)
+TargetInput.Position = UDim2.new(0, 10, 0, 80)
+TargetInput.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
 TargetInput.Text = "1"
 TargetInput.TextColor3 = COLOR_BLUE
 TargetInput.Font = Enum.Font.GothamBold
-TargetInput.TextSize = 18
-TargetInput.Parent = ContentContainer
+TargetInput.TextSize = 16
+TargetInput.Parent = LeftCard
 Instance.new("UICorner", TargetInput).CornerRadius = UDim.new(0, 6)
 
 local InputStroke = Instance.new("UIStroke")
@@ -358,24 +394,25 @@ InputStroke.Thickness = 1
 InputStroke.Parent = TargetInput
 
 local MaxPlayersLabel = Instance.new("TextLabel")
-MaxPlayersLabel.Size = UDim2.new(1, -30, 0, 20)
-MaxPlayersLabel.Position = UDim2.new(0, 15, 0, 78)
+MaxPlayersLabel.Size = UDim2.new(1, -20, 0, 20)
+MaxPlayersLabel.Position = UDim2.new(0, 10, 0, 125)
 MaxPlayersLabel.BackgroundTransparency = 1
 MaxPlayersLabel.Text = getTxt("maxInfo") .. Players.MaxPlayers .. getTxt("playersUnit")
 MaxPlayersLabel.TextColor3 = Color3.fromRGB(170, 170, 180)
 MaxPlayersLabel.Font = Enum.Font.Gotham
 MaxPlayersLabel.TextSize = 11
-MaxPlayersLabel.Parent = ContentContainer
+MaxPlayersLabel.TextXAlignment = Enum.TextXAlignment.Left
+MaxPlayersLabel.Parent = LeftCard
 
 local HopButton = Instance.new("TextButton")
-HopButton.Size = UDim2.new(1, -30, 0, 42)
-HopButton.Position = UDim2.new(0, 15, 1, -52)
+HopButton.Size = UDim2.new(1, -20, 0, 42)
+HopButton.Position = UDim2.new(0, 10, 1, -52)
 HopButton.BackgroundColor3 = COLOR_DARK_BLUE
 HopButton.Text = getTxt("hopBtn")
 HopButton.TextColor3 = COLOR_TEXT
 HopButton.Font = Enum.Font.GothamBold
-HopButton.TextSize = 14
-HopButton.Parent = ContentContainer
+HopButton.TextSize = 13
+HopButton.Parent = LeftCard
 Instance.new("UICorner", HopButton).CornerRadius = UDim.new(0, 6)
 
 local HopBtnStroke = Instance.new("UIStroke")
@@ -383,7 +420,90 @@ HopBtnStroke.Color = COLOR_BLUE
 HopBtnStroke.Thickness = 1
 HopBtnStroke.Parent = HopButton
 
--- ================= LOGIC VALIDATION BÁO LỖI VƯỢT GIỚI HẠN SERVER =================
+
+-- KHUNG PHẢI: TP TO PLAYER IN SERVER
+local RightCard = Instance.new("Frame")
+RightCard.Size = UDim2.new(0.48, 0, 1, -20)
+RightCard.Position = UDim2.new(0.52, 0, 0, 5)
+RightCard.BackgroundColor3 = COLOR_CARD
+RightCard.BorderSizePixel = 0
+RightCard.Parent = ContentContainer
+Instance.new("UICorner", RightCard).CornerRadius = UDim.new(0, 8)
+
+local RightStroke = Instance.new("UIStroke")
+RightStroke.Color = COLOR_BLUE
+RightStroke.Thickness = 1
+RightStroke.Parent = RightCard
+
+local Tab2Title = Instance.new("TextLabel")
+Tab2Title.Size = UDim2.new(1, 0, 0, 30)
+Tab2Title.Position = UDim2.new(0, 0, 0, 10)
+Tab2Title.BackgroundTransparency = 1
+Tab2Title.Text = getTxt("tab2Title")
+Tab2Title.TextColor3 = COLOR_BLUE
+Tab2Title.Font = Enum.Font.GothamBold
+Tab2Title.TextSize = 14
+Tab2Title.Parent = RightCard
+
+local PlayerInputLabel = Instance.new("TextLabel")
+PlayerInputLabel.Size = UDim2.new(1, -20, 0, 30)
+PlayerInputLabel.Position = UDim2.new(0, 10, 0, 45)
+PlayerInputLabel.BackgroundTransparency = 1
+PlayerInputLabel.Text = getTxt("inputPlayerLabel")
+PlayerInputLabel.TextColor3 = COLOR_TEXT
+PlayerInputLabel.Font = Enum.Font.GothamMedium
+PlayerInputLabel.TextSize = 11
+PlayerInputLabel.TextWrapped = true
+PlayerInputLabel.TextXAlignment = Enum.TextXAlignment.Left
+PlayerInputLabel.Parent = RightCard
+
+local PlayerInput = Instance.new("TextBox")
+PlayerInput.Size = UDim2.new(1, -20, 0, 38)
+PlayerInput.Position = UDim2.new(0, 10, 0, 80)
+PlayerInput.BackgroundColor3 = Color3.fromRGB(15, 15, 20)
+PlayerInput.PlaceholderText = "name:abcxyz"
+PlayerInput.PlaceholderColor3 = Color3.fromRGB(100, 100, 110)
+PlayerInput.Text = ""
+PlayerInput.TextColor3 = COLOR_BLUE
+PlayerInput.Font = Enum.Font.GothamBold
+PlayerInput.TextSize = 14
+PlayerInput.Parent = RightCard
+Instance.new("UICorner", PlayerInput).CornerRadius = UDim.new(0, 6)
+
+local PlayerInputStroke = Instance.new("UIStroke")
+PlayerInputStroke.Color = COLOR_BLUE
+PlayerInputStroke.Thickness = 1
+PlayerInputStroke.Parent = PlayerInput
+
+local PlayerHintLabel = Instance.new("TextLabel")
+PlayerHintLabel.Size = UDim2.new(1, -20, 0, 20)
+PlayerHintLabel.Position = UDim2.new(0, 10, 0, 125)
+PlayerHintLabel.BackgroundTransparency = 1
+PlayerHintLabel.Text = "Ví dụ: name:Player123"
+PlayerHintLabel.TextColor3 = Color3.fromRGB(170, 170, 180)
+PlayerHintLabel.Font = Enum.Font.Gotham
+PlayerHintLabel.TextSize = 11
+PlayerHintLabel.TextXAlignment = Enum.TextXAlignment.Left
+PlayerHintLabel.Parent = RightCard
+
+local TpButton = Instance.new("TextButton")
+TpButton.Size = UDim2.new(1, -20, 0, 42)
+TpButton.Position = UDim2.new(0, 10, 1, -52)
+TpButton.BackgroundColor3 = COLOR_DARK_BLUE
+TpButton.Text = getTxt("tpBtn")
+TpButton.TextColor3 = COLOR_TEXT
+TpButton.Font = Enum.Font.GothamBold
+TpButton.TextSize = 13
+TpButton.Parent = RightCard
+Instance.new("UICorner", TpButton).CornerRadius = UDim.new(0, 6)
+
+local TpBtnStroke = Instance.new("UIStroke")
+TpBtnStroke.Color = COLOR_BLUE
+TpBtnStroke.Thickness = 1
+TpBtnStroke.Parent = TpButton
+
+
+-- ================= LOGIC VALIDATION AUTO HOP =================
 local isInputValid = true
 
 local function validateInput()
@@ -413,7 +533,7 @@ end
 
 TargetInput:GetPropertyChangedSignal("Text"):Connect(validateInput)
 
--- ================= 3. THÔNG BÁO ĐANG ĐỌC DỮ LIỆU & HOP =================
+-- ================= 3. THÔNG BÁO ĐANG ĐỌC DỮ LIỆU & HOP / TP =================
 local StatusText = Instance.new("TextLabel")
 StatusText.Size = UDim2.new(1, 0, 0, 80)
 StatusText.Position = UDim2.new(0, 0, 0.4, 0)
@@ -421,7 +541,7 @@ StatusText.BackgroundTransparency = 1
 StatusText.Text = getTxt("statusHop")
 StatusText.TextColor3 = COLOR_BLUE
 StatusText.Font = Enum.Font.GothamBlack
-StatusText.TextSize = 28
+StatusText.TextSize = 26
 StatusText.TextStrokeTransparency = 0.5
 StatusText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 StatusText.Visible = false
@@ -443,13 +563,17 @@ FloatLangBtn.MouseButton1Click:Connect(function()
     end
 
     MainTitle.Text = getTxt("mainTitle")
+    Tab1Title.Text = getTxt("tab1Title")
+    Tab2Title.Text = getTxt("tab2Title")
     InputLabel.Text = getTxt("inputLabel")
+    PlayerInputLabel.Text = getTxt("inputPlayerLabel")
     HopButton.Text = getTxt("hopBtn")
+    TpButton.Text = getTxt("tpBtn")
     StatusText.Text = getTxt("statusHop")
     validateInput()
 end)
 
--- ================= LOGIC QUY TRÌNH LOADING & HIỆN MENU FADE-IN =================
+-- ================= QUY TRÌNH LOADING & HIỆN MENU =================
 task.spawn(function()
     TweenService:Create(LoadingBarFill, TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)}):Play()
     
@@ -469,7 +593,7 @@ task.spawn(function()
     TweenService:Create(MainCanvas, TweenInfo.new(1.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
 end)
 
--- Logic tìm kiếm Server theo số lượng người
+-- ================= TÍNH NĂNG 1: AUTO HOP SERVER =================
 local function HopToTargetServer(targetCount)
     if not isInputValid then return end
 
@@ -521,7 +645,7 @@ local function HopToTargetServer(targetCount)
         StatusText.Text = getTxt("statusFound") .. targetCount .. getTxt("playersUnit") .. "!"
         TeleportService:TeleportToPlaceInstance(PlaceId, foundServer, LocalPlayer)
     else
-        StatusText.Text = getTxt("statusNotFound") .. targetCount .. getTxt("playersUnit") .. "!"
+        StatusText.Text = getTxt("statusNotFound")
         task.wait(3)
         StatusText.Visible = false
         MainCanvas.Visible = true
@@ -533,4 +657,79 @@ HopButton.MouseButton1Click:Connect(function()
         local targetNum = tonumber(TargetInput.Text)
         HopToTargetServer(targetNum)
     end
+end)
+
+
+-- ================= TÍNH NĂNG 2: TP TO PLAYER IN SERVER =================
+local function SearchAndTpToPlayer(rawText)
+    local targetName = rawText
+    -- Nếu người dùng nhập dạng "name:abcxyz", lọc lấy phần tên phía sau dấu hai chấm
+    if rawText:sub(1, 5):lower() == "name:" then
+        targetName = rawText:sub(6)
+    end
+    targetName = targetName:gsub("^%s+", ""):gsub("%s+$", "") -- trim khoảng trắng
+
+    if targetName == "" then return end
+
+    MainCanvas.Visible = false
+    StatusText.Visible = true
+    StatusText.Text = getTxt("statusTP")
+
+    local cursor = ""
+    local targetServerId = nil
+
+    while task.wait(0.3) do
+        local success, result = pcall(function()
+            local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+            if cursor ~= "" then
+                url = url .. "&cursor=" .. cursor
+            end
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+
+        if success and result and result.data then
+            local found = false
+            for _, server in ipairs(result.data) do
+                -- Lấy danh sách player preview nếu có trong server data (hoặc check qua API phụ nếu cần)
+                -- Lưu ý: Roblox public servers API trả về danh sách player objects trong server.playerTokens / server.players
+                if server.players then
+                    for _, p in ipairs(server.players) do
+                        if p.name and p.name:lower():find(targetName:lower()) then
+                            targetServerId = server.id
+                            found = true
+                            break
+                        end
+                    end
+                end
+                if found then break end
+            end
+
+            if targetServerId then
+                break
+            end
+
+            if result.nextPageCursor then
+                cursor = result.nextPageCursor
+            else
+                break
+            end
+        else
+            StatusText.Text = getTxt("statusRetry")
+            task.wait(1)
+        end
+    end
+
+    if targetServerId then
+        StatusText.Text = getTxt("statusTPFound")
+        TeleportService:TeleportToPlaceInstance(PlaceId, targetServerId, LocalPlayer)
+    else
+        StatusText.Text = getTxt("statusNotFound")
+        task.wait(3)
+        StatusText.Visible = false
+        MainCanvas.Visible = true
+    end
+end
+
+TpButton.MouseButton1Click:Connect(function()
+    SearchAndTpToPlayer(PlayerInput.Text)
 end)
