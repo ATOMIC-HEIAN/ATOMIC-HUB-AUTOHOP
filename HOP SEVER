@@ -10,7 +10,7 @@ local LocalPlayer = Players.LocalPlayer
 local PlaceId = game.PlaceId
 local JobId = game.JobId
 
--- HÀM QUEUE ON TELEPORT
+-- HÀM QUEUE ON TELEPORT (TỰ ĐỘNG BẬT LẠI MENU KHI SANG SERVER MỚI)
 local function queueScript()
     local scriptCode = [[
         loadstring(game:HttpGet("https://raw.githubusercontent.com/ATOMIC-HEIAN/ATOMIC-HUB-AUTOHOP/refs/heads/main/HOP%20SEVER"))()
@@ -120,7 +120,7 @@ end
 if LocalPlayer.Character then createAdminTitle(LocalPlayer.Character) end
 LocalPlayer.CharacterAdded:Connect(createAdminTitle)
 
--- ================= ĐA NGÔN NGỮ =================
+-- ================= HỆ THỐNG ĐA NGÔN NGỮ (EN / VN) =================
 local currentLang = "EN"
 local texts = {
     EN = {
@@ -168,7 +168,7 @@ local texts = {
 }
 local function getTxt(key) return texts[currentLang][key] or key end
 
--- NÚT FLOATING LANG
+-- NÚT FLOATING NGÔN NGỮ (EN / VN)
 local FloatLangBtn = Instance.new("TextButton", ScreenGui)
 FloatLangBtn.Size = UDim2.new(0, 120, 0, 36)
 FloatLangBtn.Position = UDim2.new(0.5, -60, 0, 15)
@@ -456,19 +456,45 @@ StatusText.TextStrokeTransparency = 0.5
 StatusText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
 StatusText.Visible = false
 
+-- LOGIC ĐỔI NGÔN NGỮ (EN / VN) REALTIME
+FloatLangBtn.MouseButton1Click:Connect(function()
+    if currentLang == "EN" then
+        currentLang = "VN"
+        FloatLangBtn.Text = "🌐 LANG: VN"
+    else
+        currentLang = "EN"
+        FloatLangBtn.Text = "🌐 LANG: EN"
+    end
+    
+    ModeTitle.Text = getTxt("modeTitle")
+    Card1.Text = getTxt("card1")
+    Card2.Text = getTxt("card2")
+    ExecBtn.Text = getTxt("execBtn")
+
+    if FeatureCanvas.Visible then
+        if selectedMode == 1 then
+            FeatureTitle.Text = getTxt("hopTitle")
+            Label1.Text = getTxt("inputLabel")
+            HintLabel.Text = getTxt("maxInfo") .. Players.MaxPlayers .. getTxt("playersUnit")
+            ActionBtn.Text = getTxt("hopBtn")
+        else
+            FeatureTitle.Text = getTxt("tpTitle")
+            Label1.Text = getTxt("inputPlayerLabel")
+            ActionBtn.Text = getTxt("tpBtn")
+        end
+    end
+end)
+
 -- ANIMATION KHI BẤM NÚT EXECUTE
 ExecBtn.MouseButton1Click:Connect(function()
-    -- Hiệu ứng co nút
     TweenService:Create(ExecBtn, TweenInfo.new(0.1), {Size = UDim2.new(1, -80, 0, 38)}):Play()
     task.wait(0.1)
     TweenService:Create(ExecBtn, TweenInfo.new(0.1), {Size = UDim2.new(1, -70, 0, 42)}):Play()
 
-    -- Ẩn Mode Canvas với hiệu ứng Fade Out + Scale nhỏ
     TweenService:Create(ModeCanvas, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {GroupTransparency = 1}):Play()
     task.wait(0.3)
     ModeCanvas.Visible = false
 
-    -- Hiện Feature Canvas với hiệu ứng Pop Bounce
     FeatureCanvas.Visible = true
     FeatureCanvas.Size = UDim2.new(0, 300, 0, 180)
     TweenService:Create(FeatureCanvas, TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 380, 0, 220), GroupTransparency = 0}):Play()
@@ -489,16 +515,6 @@ ExecBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-FloatLangBtn.MouseButton1Click:Connect(function()
-    currentLang = (currentLang == "EN") and "VN" or "EN"
-    FloatLangBtn.Text = "🌐 LANG: " .. currentLang
-    
-    ModeTitle.Text = getTxt("modeTitle")
-    Card1.Text = getTxt("card1")
-    Card2.Text = getTxt("card2")
-    ExecBtn.Text = getTxt("execBtn")
-end)
-
 -- CHẠY HIỆU ỨNG LOADING BAN ĐẦU
 task.spawn(function()
     LoadingCanvas.Visible = true
@@ -516,7 +532,6 @@ task.spawn(function()
 
     task.wait(0.5)
 
-    -- Mở Menu chọn chế độ với hiệu ứng pop-up bá khí
     ModeCanvas.Visible = true
     ModeCanvas.Size = UDim2.new(0, 350, 0, 220)
     TweenService:Create(ModeCanvas, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 450, 0, 280), GroupTransparency = 0}):Play()
