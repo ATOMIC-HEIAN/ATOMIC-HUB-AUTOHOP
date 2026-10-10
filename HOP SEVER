@@ -1,0 +1,536 @@
+local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local MarketplaceService = game:GetService("MarketplaceService")
+
+local LocalPlayer = Players.LocalPlayer
+local PlaceId = game.PlaceId
+local JobId = game.JobId
+
+-- Xóa UI cũ nếu có
+if LocalPlayer.PlayerGui:FindFirstChild("ATOMIC_HUB_AutoHop") then
+    LocalPlayer.PlayerGui.ATOMIC_HUB_AutoHop:Destroy()
+end
+
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "ATOMIC_HUB_AutoHop"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
+
+-- PALETTE MÀU SẮC (Nền đen, viền xanh dương)
+local COLOR_BG = Color3.fromRGB(15, 15, 20)
+local COLOR_BLUE = Color3.fromRGB(0, 140, 255)
+local COLOR_DARK_BLUE = Color3.fromRGB(0, 80, 180)
+local COLOR_TEXT = Color3.fromRGB(255, 255, 255)
+local COLOR_RED = Color3.fromRGB(255, 50, 50)
+local COLOR_DISABLED = Color3.fromRGB(50, 50, 60)
+
+-- Lấy tên Trò chơi hiện tại
+local gameName = "Roblox Game"
+pcall(function()
+    local info = MarketplaceService:GetProductInfo(PlaceId)
+    if info and info.Name then
+        gameName = info.Name
+    end
+end)
+
+-- ================= HỆ THỐNG CHỮ TRÊN ĐẦU NGƯỜI CHƠI (ADMIN VÀNG LẤP LÁNH ✨) =================
+local function createAdminTitle(character)
+    if not character then return end
+    local head = character:WaitForChild("Head", 5)
+    if not head then return end
+
+    if head:FindFirstChild("AtomicAdminTag") then
+        head.AtomicAdminTag:Destroy()
+    end
+
+    local bbGui = Instance.new("BillboardGui")
+    bbGui.Name = "AtomicAdminTag"
+    bbGui.Adornee = head
+    bbGui.Size = UDim2.new(0, 300, 0, 70)
+    bbGui.StudsOffset = Vector3.new(0, 3.0, 0)
+    bbGui.AlwaysOnTop = true
+    bbGui.Parent = head
+
+    local mainContainer = Instance.new("Frame")
+    mainContainer.Size = UDim2.new(1, 0, 1, 0)
+    mainContainer.BackgroundTransparency = 1
+    mainContainer.Parent = bbGui
+
+    local listLayout = Instance.new("UIListLayout")
+    listLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    listLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    listLayout.Padding = UDim.new(0, 2)
+    listLayout.Parent = mainContainer
+
+    local adminText = Instance.new("TextLabel")
+    adminText.LayoutOrder = 1
+    adminText.Size = UDim2.new(1, 0, 0, 26)
+    adminText.BackgroundTransparency = 1
+    adminText.Text = "✨ ADMIN ✨"
+    adminText.TextColor3 = Color3.fromRGB(255, 215, 0)
+    adminText.Font = Enum.Font.GothamBlack
+    adminText.TextSize = 20
+    adminText.TextStrokeTransparency = 0.2
+    adminText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    adminText.Parent = mainContainer
+
+    local nameText = Instance.new("TextLabel")
+    nameText.LayoutOrder = 2
+    nameText.Size = UDim2.new(1, 0, 0, 22)
+    nameText.BackgroundTransparency = 1
+    nameText.Text = "(@" .. LocalPlayer.Name .. ")"
+    nameText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    nameText.Font = Enum.Font.GothamBold
+    nameText.TextSize = 15
+    nameText.TextStrokeTransparency = 0.3
+    nameText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+    nameText.Parent = mainContainer
+
+    local step = 0
+    RunService.Heartbeat:Connect(function(dt)
+        step = step + dt * 4
+        local shine = (math.sin(step) + 1) / 2
+        adminText.TextColor3 = Color3.fromRGB(255, 180 + (75 * shine), 30 * shine)
+    end)
+end
+
+if LocalPlayer.Character then
+    createAdminTitle(LocalPlayer.Character)
+end
+LocalPlayer.CharacterAdded:Connect(createAdminTitle)
+
+-- ================= HỆ THỐNG ĐA NGÔN NGỮ (EN / VN) =================
+local currentLang = "EN"
+local texts = {
+    EN = {
+        loadTitle = "ATOMIC HUB - LOADING...",
+        gameLabel = "Game: ",
+        mainTitle = "ATOMIC HUB - AutoHopServer",
+        inputLabel = "Enter target player count (min: 1):",
+        maxInfo = "Max server capacity (max): ",
+        errorLimit = "⚠️ Exceeded server limit (Max: ",
+        hopBtn = "AUTO HOP SERVER",
+        statusHop = "Reading server data to hop...",
+        statusRetry = "Scanning server list (Retrying)...",
+        statusFound = "Found server with ",
+        statusNotFound = "No server found with exactly ",
+        playersUnit = " players"
+    },
+    VN = {
+        loadTitle = "ATOMIC HUB - ĐANG TẢI...",
+        gameLabel = "Trò chơi: ",
+        mainTitle = "ATOMIC HUB - Tự Động Hop Server",
+        inputLabel = "Nhập số lượng người chơi muốn vào (min: 1):",
+        maxInfo = "Sức chứa tối đa của Server (max): ",
+        errorLimit = "⚠️ Quá giới hạn server (Tối đa: ",
+        hopBtn = "BẮT ĐẦU HOP SERVER",
+        statusHop = "Đang đọc các dữ liệu sever để hop...",
+        statusRetry = "Đang quét danh sách Server (Thử lại)...",
+        statusFound = "Đã tìm thấy Server ",
+        statusNotFound = "Không tìm thấy Server có đúng ",
+        playersUnit = " người"
+    }
+}
+
+local function getTxt(key)
+    return texts[currentLang][key] or key
+end
+
+-- ================= NÚT FLOATING NẰM Ở TRÊN GIỮA MÀN HÌNH =================
+local FloatLangBtn = Instance.new("TextButton")
+FloatLangBtn.Size = UDim2.new(0, 120, 0, 36)
+FloatLangBtn.Position = UDim2.new(0.5, -60, 0, 15)
+FloatLangBtn.BackgroundColor3 = COLOR_BG
+FloatLangBtn.Text = "🌐 LANG: EN"
+FloatLangBtn.TextColor3 = COLOR_BLUE
+FloatLangBtn.Font = Enum.Font.GothamBold
+FloatLangBtn.TextSize = 13
+FloatLangBtn.Parent = ScreenGui
+Instance.new("UICorner", FloatLangBtn).CornerRadius = UDim.new(0, 8)
+
+local FloatStroke = Instance.new("UIStroke")
+FloatStroke.Color = COLOR_BLUE
+FloatStroke.Thickness = 2
+FloatStroke.Parent = FloatLangBtn
+
+-- ================= 1. MÀN HÌNH LOADING BAN ĐẦU CHI TIẾT =================
+local LoadingCanvas = Instance.new("CanvasGroup")
+LoadingCanvas.Size = UDim2.new(0, 380, 0, 210)
+LoadingCanvas.Position = UDim2.new(0.5, -190, 0.5, -105)
+LoadingCanvas.BackgroundColor3 = COLOR_BG
+LoadingCanvas.BorderSizePixel = 0
+LoadingCanvas.GroupTransparency = 0
+LoadingCanvas.Parent = ScreenGui
+
+Instance.new("UICorner", LoadingCanvas).CornerRadius = UDim.new(0, 10)
+
+local LoadStroke = Instance.new("UIStroke")
+LoadStroke.Color = COLOR_BLUE
+LoadStroke.Thickness = 2
+LoadStroke.Parent = LoadingCanvas
+
+local LoadTitle = Instance.new("TextLabel")
+LoadTitle.Size = UDim2.new(1, 0, 0, 32)
+LoadTitle.BackgroundTransparency = 1
+LoadTitle.Text = getTxt("loadTitle")
+LoadTitle.TextColor3 = COLOR_BLUE
+LoadTitle.Font = Enum.Font.GothamBold
+LoadTitle.TextSize = 15
+LoadTitle.Parent = LoadingCanvas
+
+-- Hình ảnh Avatar Player
+local AvatarImg = Instance.new("ImageLabel")
+AvatarImg.Size = UDim2.new(0, 64, 0, 64)
+AvatarImg.Position = UDim2.new(0, 20, 0, 42)
+AvatarImg.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+AvatarImg.Parent = LoadingCanvas
+Instance.new("UICorner", AvatarImg).CornerRadius = UDim.new(1, 0)
+
+local AvatarStroke = Instance.new("UIStroke")
+AvatarStroke.Color = COLOR_BLUE
+AvatarStroke.Thickness = 1.5
+AvatarStroke.Parent = AvatarImg
+
+pcall(function()
+    local content, _ = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+    AvatarImg.Image = content
+end)
+
+local UsernameLabel = Instance.new("TextLabel")
+UsernameLabel.Size = UDim2.new(1, -110, 0, 22)
+UsernameLabel.Position = UDim2.new(0, 95, 0, 45)
+UsernameLabel.BackgroundTransparency = 1
+UsernameLabel.Text = "@" .. LocalPlayer.Name
+UsernameLabel.TextColor3 = COLOR_TEXT
+UsernameLabel.Font = Enum.Font.GothamBold
+UsernameLabel.TextSize = 15
+UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+UsernameLabel.Parent = LoadingCanvas
+
+local GameLabel = Instance.new("TextLabel")
+GameLabel.Size = UDim2.new(1, -110, 0, 36)
+GameLabel.Position = UDim2.new(0, 95, 0, 68)
+GameLabel.BackgroundTransparency = 1
+GameLabel.Text = getTxt("gameLabel") .. gameName
+GameLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
+GameLabel.Font = Enum.Font.GothamMedium
+GameLabel.TextSize = 12
+GameLabel.TextXAlignment = Enum.TextXAlignment.Left
+GameLabel.TextWrapped = true
+GameLabel.Parent = LoadingCanvas
+
+local ProgressText = Instance.new("TextLabel")
+ProgressText.Size = UDim2.new(1, -40, 0, 20)
+ProgressText.Position = UDim2.new(0, 20, 0, 122)
+ProgressText.BackgroundTransparency = 1
+ProgressText.Text = "Load menu: 1/100"
+ProgressText.TextColor3 = COLOR_BLUE
+ProgressText.Font = Enum.Font.GothamBold
+ProgressText.TextSize = 13
+ProgressText.TextXAlignment = Enum.TextXAlignment.Center
+ProgressText.Parent = LoadingCanvas
+
+local LoadingBarBg = Instance.new("Frame")
+LoadingBarBg.Size = UDim2.new(1, -40, 0, 10)
+LoadingBarBg.Position = UDim2.new(0, 20, 0, 152)
+LoadingBarBg.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+LoadingBarBg.BorderSizePixel = 0
+LoadingBarBg.Parent = LoadingCanvas
+Instance.new("UICorner", LoadingBarBg).CornerRadius = UDim.new(0, 5)
+
+local LoadingBarFill = Instance.new("Frame")
+LoadingBarFill.Size = UDim2.new(0, 0, 1, 0)
+LoadingBarFill.BackgroundColor3 = COLOR_BLUE
+LoadingBarFill.BorderSizePixel = 0
+LoadingBarFill.Parent = LoadingBarBg
+Instance.new("UICorner", LoadingBarFill).CornerRadius = UDim.new(0, 5)
+
+-- ================= 2. MENU CHÍNH =================
+local MainCanvas = Instance.new("CanvasGroup")
+MainCanvas.Size = UDim2.new(0, 380, 0, 220)
+MainCanvas.Position = UDim2.new(0.5, -190, 0.5, -110)
+MainCanvas.BackgroundColor3 = COLOR_BG
+MainCanvas.BorderSizePixel = 0
+MainCanvas.Visible = false
+MainCanvas.GroupTransparency = 1
+MainCanvas.Active = true
+MainCanvas.Draggable = true
+MainCanvas.Parent = ScreenGui
+
+Instance.new("UICorner", MainCanvas).CornerRadius = UDim.new(0, 8)
+
+local MainStroke = Instance.new("UIStroke")
+MainStroke.Color = COLOR_BLUE
+MainStroke.Thickness = 2
+MainStroke.Parent = MainCanvas
+
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 28, 0, 28)
+MinimizeBtn.Position = UDim2.new(0, 6, 0, 6)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
+MinimizeBtn.Text = "−"
+MinimizeBtn.TextColor3 = COLOR_TEXT
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.TextSize = 16
+MinimizeBtn.Parent = MainCanvas
+Instance.new("UICorner", MinimizeBtn).CornerRadius = UDim.new(0, 6)
+
+local MinStroke = Instance.new("UIStroke")
+MinStroke.Color = COLOR_BLUE
+MinStroke.Thickness = 1
+MinStroke.Parent = MinimizeBtn
+
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 28, 0, 28)
+CloseBtn.Position = UDim2.new(1, -34, 0, 6)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 40, 40)
+CloseBtn.Text = "✕"
+CloseBtn.TextColor3 = COLOR_TEXT
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 14
+CloseBtn.Parent = MainCanvas
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+local isMinimized = false
+local ContentContainer = Instance.new("Frame")
+ContentContainer.Size = UDim2.new(1, 0, 1, -40)
+ContentContainer.Position = UDim2.new(0, 0, 0, 40)
+ContentContainer.BackgroundTransparency = 1
+ContentContainer.Parent = MainCanvas
+
+MinimizeBtn.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    if isMinimized then
+        ContentContainer.Visible = false
+        MainCanvas.Size = UDim2.new(0, 380, 0, 40)
+        MinimizeBtn.Text = "+"
+    else
+        MainCanvas.Size = UDim2.new(0, 380, 0, 220)
+        ContentContainer.Visible = true
+        MinimizeBtn.Text = "−"
+    end
+end)
+
+local MainTitle = Instance.new("TextLabel")
+MainTitle.Size = UDim2.new(1, -80, 0, 40)
+MainTitle.Position = UDim2.new(0, 40, 0, 0)
+MainTitle.BackgroundTransparency = 1
+MainTitle.Text = getTxt("mainTitle")
+MainTitle.TextColor3 = COLOR_BLUE
+MainTitle.Font = Enum.Font.GothamBold
+MainTitle.TextSize = 14
+MainTitle.TextXAlignment = Enum.TextXAlignment.Center
+MainTitle.Parent = MainCanvas
+
+local InputLabel = Instance.new("TextLabel")
+InputLabel.Size = UDim2.new(1, -30, 0, 20)
+InputLabel.Position = UDim2.new(0, 15, 0, 10)
+InputLabel.BackgroundTransparency = 1
+InputLabel.Text = getTxt("inputLabel")
+InputLabel.TextColor3 = COLOR_TEXT
+InputLabel.Font = Enum.Font.GothamMedium
+InputLabel.TextSize = 12
+InputLabel.TextXAlignment = Enum.TextXAlignment.Left
+InputLabel.Parent = ContentContainer
+
+local TargetInput = Instance.new("TextBox")
+TargetInput.Size = UDim2.new(0, 120, 0, 36)
+TargetInput.Position = UDim2.new(0.5, -60, 0, 35)
+TargetInput.BackgroundColor3 = Color3.fromRGB(25, 25, 35)
+TargetInput.Text = "1"
+TargetInput.TextColor3 = COLOR_BLUE
+TargetInput.Font = Enum.Font.GothamBold
+TargetInput.TextSize = 18
+TargetInput.Parent = ContentContainer
+Instance.new("UICorner", TargetInput).CornerRadius = UDim.new(0, 6)
+
+local InputStroke = Instance.new("UIStroke")
+InputStroke.Color = COLOR_BLUE
+InputStroke.Thickness = 1
+InputStroke.Parent = TargetInput
+
+local MaxPlayersLabel = Instance.new("TextLabel")
+MaxPlayersLabel.Size = UDim2.new(1, -30, 0, 20)
+MaxPlayersLabel.Position = UDim2.new(0, 15, 0, 78)
+MaxPlayersLabel.BackgroundTransparency = 1
+MaxPlayersLabel.Text = getTxt("maxInfo") .. Players.MaxPlayers .. getTxt("playersUnit")
+MaxPlayersLabel.TextColor3 = Color3.fromRGB(170, 170, 180)
+MaxPlayersLabel.Font = Enum.Font.Gotham
+MaxPlayersLabel.TextSize = 11
+MaxPlayersLabel.Parent = ContentContainer
+
+local HopButton = Instance.new("TextButton")
+HopButton.Size = UDim2.new(1, -30, 0, 42)
+HopButton.Position = UDim2.new(0, 15, 1, -52)
+HopButton.BackgroundColor3 = COLOR_DARK_BLUE
+HopButton.Text = getTxt("hopBtn")
+HopButton.TextColor3 = COLOR_TEXT
+HopButton.Font = Enum.Font.GothamBold
+HopButton.TextSize = 14
+HopButton.Parent = ContentContainer
+Instance.new("UICorner", HopButton).CornerRadius = UDim.new(0, 6)
+
+local HopBtnStroke = Instance.new("UIStroke")
+HopBtnStroke.Color = COLOR_BLUE
+HopBtnStroke.Thickness = 1
+HopBtnStroke.Parent = HopButton
+
+-- ================= LOGIC VALIDATION BÁO LỖI VƯỢT GIỚI HẠN SERVER =================
+local isInputValid = true
+
+local function validateInput()
+    local val = tonumber(TargetInput.Text)
+    local maxCap = Players.MaxPlayers
+    
+    if val and val > maxCap then
+        isInputValid = false
+        TargetInput.TextColor3 = COLOR_RED
+        InputStroke.Color = COLOR_RED
+        MaxPlayersLabel.Text = getTxt("errorLimit") .. maxCap .. ")"
+        MaxPlayersLabel.TextColor3 = COLOR_RED
+        HopButton.BackgroundColor3 = COLOR_DISABLED
+        HopBtnStroke.Color = Color3.fromRGB(80, 80, 90)
+        HopButton.TextColor3 = Color3.fromRGB(150, 150, 160)
+    else
+        isInputValid = true
+        TargetInput.TextColor3 = COLOR_BLUE
+        InputStroke.Color = COLOR_BLUE
+        MaxPlayersLabel.Text = getTxt("maxInfo") .. maxCap .. getTxt("playersUnit")
+        MaxPlayersLabel.TextColor3 = Color3.fromRGB(170, 170, 180)
+        HopButton.BackgroundColor3 = COLOR_DARK_BLUE
+        HopBtnStroke.Color = COLOR_BLUE
+        HopButton.TextColor3 = COLOR_TEXT
+    end
+end
+
+TargetInput:GetPropertyChangedSignal("Text"):Connect(validateInput)
+
+-- ================= 3. THÔNG BÁO ĐANG ĐỌC DỮ LIỆU & HOP =================
+local StatusText = Instance.new("TextLabel")
+StatusText.Size = UDim2.new(1, 0, 0, 80)
+StatusText.Position = UDim2.new(0, 0, 0.4, 0)
+StatusText.BackgroundTransparency = 1
+StatusText.Text = getTxt("statusHop")
+StatusText.TextColor3 = COLOR_BLUE
+StatusText.Font = Enum.Font.GothamBlack
+StatusText.TextSize = 28
+StatusText.TextStrokeTransparency = 0.5
+StatusText.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+StatusText.Visible = false
+StatusText.Parent = ScreenGui
+
+-- ================= SỰ KIỆN CHUYỂN ĐỔI NGÔN NGỮ =================
+FloatLangBtn.MouseButton1Click:Connect(function()
+    if currentLang == "EN" then
+        currentLang = "VN"
+        FloatLangBtn.Text = "🌐 LANG: VN"
+    else
+        currentLang = "EN"
+        FloatLangBtn.Text = "🌐 LANG: EN"
+    end
+    
+    if LoadingCanvas and LoadingCanvas.Parent then
+        LoadTitle.Text = getTxt("loadTitle")
+        GameLabel.Text = getTxt("gameLabel") .. gameName
+    end
+
+    MainTitle.Text = getTxt("mainTitle")
+    InputLabel.Text = getTxt("inputLabel")
+    HopButton.Text = getTxt("hopBtn")
+    StatusText.Text = getTxt("statusHop")
+    validateInput()
+end)
+
+-- ================= LOGIC QUY TRÌNH LOADING & HIỆN MENU FADE-IN =================
+task.spawn(function()
+    TweenService:Create(LoadingBarFill, TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)}):Play()
+    
+    for i = 1, 100 do
+        ProgressText.Text = "Load menu: " .. i .. "/100"
+        task.wait(0.02)
+    end
+
+    local fadeOut = TweenService:Create(LoadingCanvas, TweenInfo.new(0.5), {GroupTransparency = 1})
+    fadeOut:Play()
+    fadeOut.Completed:Wait()
+    LoadingCanvas:Destroy()
+
+    task.wait(2)
+
+    MainCanvas.Visible = true
+    TweenService:Create(MainCanvas, TweenInfo.new(1.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {GroupTransparency = 0}):Play()
+end)
+
+-- Logic tìm kiếm Server theo số lượng người
+local function HopToTargetServer(targetCount)
+    if not isInputValid then return end
+
+    if not targetCount or targetCount < 1 then
+        targetCount = 1
+        TargetInput.Text = "1"
+    end
+
+    MainCanvas.Visible = false
+    StatusText.Visible = true
+    StatusText.Text = getTxt("statusHop")
+    
+    local cursor = ""
+    local foundServer = nil
+
+    while task.wait(0.3) do
+        local success, result = pcall(function()
+            local url = "https://games.roblox.com/v1/games/" .. PlaceId .. "/servers/Public?sortOrder=Asc&limit=100"
+            if cursor ~= "" then
+                url = url .. "&cursor=" .. cursor
+            end
+            return HttpService:JSONDecode(game:HttpGet(url))
+        end)
+
+        if success and result and result.data then
+            for _, server in ipairs(result.data) do
+                if server.playing == targetCount and server.id ~= JobId then
+                    foundServer = server.id
+                    break
+                end
+            end
+
+            if foundServer then
+                break
+            end
+
+            if result.nextPageCursor then
+                cursor = result.nextPageCursor
+            else
+                break
+            end
+        else
+            StatusText.Text = getTxt("statusRetry")
+            task.wait(1)
+        end
+    end
+
+    if foundServer then
+        StatusText.Text = getTxt("statusFound") .. targetCount .. getTxt("playersUnit") .. "!"
+        TeleportService:TeleportToPlaceInstance(PlaceId, foundServer, LocalPlayer)
+    else
+        StatusText.Text = getTxt("statusNotFound") .. targetCount .. getTxt("playersUnit") .. "!"
+        task.wait(3)
+        StatusText.Visible = false
+        MainCanvas.Visible = true
+    end
+end
+
+HopButton.MouseButton1Click:Connect(function()
+    if isInputValid then
+        local targetNum = tonumber(TargetInput.Text)
+        HopToTargetServer(targetNum)
+    end
+end)
