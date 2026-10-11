@@ -5,7 +5,6 @@ local RunService = game:GetService("RunService")
 
 local LocalPlayer = Players.LocalPlayer
 
--- Xóa UI cũ nếu có
 if LocalPlayer.PlayerGui:FindFirstChild("ATOMIC_HUB_AvatarCopy") then
     LocalPlayer.PlayerGui.ATOMIC_HUB_AvatarCopy:Destroy()
 end
@@ -15,7 +14,6 @@ ScreenGui.Name = "ATOMIC_HUB_AvatarCopy"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = LocalPlayer:WaitForChild("PlayerGui")
 
--- PALETTE MÀU SẮC ATOMIC
 local COLOR_BG = Color3.fromRGB(15, 15, 20)
 local COLOR_CARD = Color3.fromRGB(22, 22, 30)
 local COLOR_BLUE = Color3.fromRGB(0, 140, 255)
@@ -23,36 +21,23 @@ local COLOR_DARK_BLUE = Color3.fromRGB(0, 80, 180)
 local COLOR_TEXT = Color3.fromRGB(255, 255, 255)
 local COLOR_GRAY = Color3.fromRGB(120, 120, 140)
 
--- ================= HỆ THỐNG LƯU TRỮ VĨNH VIỄN (FILE SAVING) =================
+-- HỆ THỐNG LƯU FILE AN TOÀN
 local FOLDER_NAME = "ATOMIC_HUB"
-local FILE_NAME = FOLDER_NAME .. "/saved_avatars.json"
-
+local FILE_NAME = FOLDER_NAME .. "/saved_avatars_v2.json"
 local savedAvatars = {}
 
-local function loadDataFromFile()
+pcall(function()
+    if isfolder and not isfolder(FOLDER_NAME) and makefolder then makefolder(FOLDER_NAME) end
+    if readfile and isfile and isfile(FILE_NAME) then
+        savedAvatars = HttpService:JSONDecode(readfile(FILE_NAME)) or {}
+    end
+end)
+
+local function saveToFile()
     pcall(function()
-        if isfolder and not isfolder(FOLDER_NAME) and makefolder then
-            makefolder(FOLDER_NAME)
-        end
-        if readfile and isfile and isfile(FILE_NAME) then
-            local data = readfile(FILE_NAME)
-            savedAvatars = HttpService:JSONDecode(data) or {}
-        end
+        if writefile then writefile(FILE_NAME, HttpService:JSONEncode(savedAvatars)) end
     end)
 end
-
-local function saveDataToFile()
-    pcall(function()
-        if isfolder and not isfolder(FOLDER_NAME) and makefolder then
-            makefolder(FOLDER_NAME)
-        end
-        if writefile then
-            writefile(FILE_NAME, HttpService:JSONEncode(savedAvatars))
-        end
-    end)
-end
-
-loadDataFromFile()
 
 -- ================= CHỮ ADMIN VÀNG LẤP LÁNH ✨ =================
 local function createAdminTitle(character)
@@ -105,10 +90,10 @@ end
 if LocalPlayer.Character then createAdminTitle(LocalPlayer.Character) end
 LocalPlayer.CharacterAdded:Connect(createAdminTitle)
 
--- ================= 1. MÀN HÌNH LOADING BÁ KHÍ (1/100) =================
+-- 1. MÀN HÌNH LOADING (1/100)
 local LoadingCanvas = Instance.new("CanvasGroup", ScreenGui)
-LoadingCanvas.Size = UDim2.new(0, 380, 0, 210)
-LoadingCanvas.Position = UDim2.new(0.5, -190, 0.5, -105)
+LoadingCanvas.Size = UDim2.new(0, 320, 0, 180)
+LoadingCanvas.Position = UDim2.new(0.5, -160, 0.5, -90)
 LoadingCanvas.BackgroundColor3 = COLOR_BG
 LoadingCanvas.GroupTransparency = 1
 Instance.new("UICorner", LoadingCanvas).CornerRadius = UDim.new(0, 10)
@@ -117,37 +102,37 @@ LoadStroke.Color = COLOR_BLUE
 LoadStroke.Thickness = 2
 
 local LoadTitle = Instance.new("TextLabel", LoadingCanvas)
-LoadTitle.Size = UDim2.new(1, 0, 0, 32)
+LoadTitle.Size = UDim2.new(1, 0, 0, 30)
 LoadTitle.BackgroundTransparency = 1
-LoadTitle.Text = "ATOMIC HUB - AVATAR COPIER 🥶"
+LoadTitle.Text = "ATOMIC HUB - LOADER 🥶"
 LoadTitle.TextColor3 = COLOR_BLUE
 LoadTitle.Font = Enum.Font.GothamBold
-LoadTitle.TextSize = 15
+LoadTitle.TextSize = 14
 
 local ProgressText = Instance.new("TextLabel", LoadingCanvas)
-ProgressText.Size = UDim2.new(1, -40, 0, 20)
-ProgressText.Position = UDim2.new(0, 20, 0, 122)
+ProgressText.Size = UDim2.new(1, -30, 0, 20)
+ProgressText.Position = UDim2.new(0, 15, 0, 100)
 ProgressText.BackgroundTransparency = 1
 ProgressText.Text = "Load menu: 1/100"
 ProgressText.TextColor3 = COLOR_BLUE
 ProgressText.Font = Enum.Font.GothamBold
-ProgressText.TextSize = 13
+ProgressText.TextSize = 12
 
 local LoadingBarBg = Instance.new("Frame", LoadingCanvas)
-LoadingBarBg.Size = UDim2.new(1, -40, 0, 10)
-LoadingBarBg.Position = UDim2.new(0, 20, 0, 152)
+LoadingBarBg.Size = UDim2.new(1, -30, 0, 8)
+LoadingBarBg.Position = UDim2.new(0, 15, 0, 130)
 LoadingBarBg.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-Instance.new("UICorner", LoadingBarBg).CornerRadius = UDim.new(0, 5)
+Instance.new("UICorner", LoadingBarBg).CornerRadius = UDim.new(0, 4)
 
 local LoadingBarFill = Instance.new("Frame", LoadingBarBg)
 LoadingBarFill.Size = UDim2.new(0, 0, 1, 0)
 LoadingBarFill.BackgroundColor3 = COLOR_BLUE
-Instance.new("UICorner", LoadingBarFill).CornerRadius = UDim.new(0, 5)
+Instance.new("UICorner", LoadingBarFill).CornerRadius = UDim.new(0, 4)
 
--- ================= 2. MAIN MENU AVATAR COPIER =================
+-- 2. MAIN MENU (THU NHỎ GỌN GÀNG)
 local MainCanvas = Instance.new("CanvasGroup", ScreenGui)
-MainCanvas.Size = UDim2.new(0, 420, 0, 440)
-MainCanvas.Position = UDim2.new(0.5, -210, 0.5, -220)
+MainCanvas.Size = UDim2.new(0, 360, 0, 380)
+MainCanvas.Position = UDim2.new(0.5, -180, 0.5, -190)
 MainCanvas.BackgroundColor3 = COLOR_BG
 MainCanvas.Visible = false
 MainCanvas.GroupTransparency = 1
@@ -158,34 +143,33 @@ local MainStroke = Instance.new("UIStroke", MainCanvas)
 MainStroke.Color = COLOR_BLUE
 MainStroke.Thickness = 2
 
--- TOP BAR: NÚT THU NHỎ (-) VÀ ĐÓNG (X)
 local TopBar = Instance.new("Frame", MainCanvas)
-TopBar.Size = UDim2.new(1, 0, 0, 36)
+TopBar.Size = UDim2.new(1, 0, 0, 32)
 TopBar.BackgroundTransparency = 1
 
 local MinBtn = Instance.new("TextButton", TopBar)
-MinBtn.Size = UDim2.new(0, 28, 0, 28)
-MinBtn.Position = UDim2.new(1, -66, 0, 4)
+MinBtn.Size = UDim2.new(0, 24, 0, 24)
+MinBtn.Position = UDim2.new(1, -58, 0, 4)
 MinBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 60)
 MinBtn.Text = "−"
 MinBtn.TextColor3 = COLOR_TEXT
 MinBtn.Font = Enum.Font.GothamBold
-Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", MinBtn).CornerRadius = UDim.new(0, 4)
 
 local CloseBtn = Instance.new("TextButton", TopBar)
-CloseBtn.Size = UDim2.new(0, 28, 0, 28)
-CloseBtn.Position = UDim2.new(1, -34, 0, 4)
+CloseBtn.Size = UDim2.new(0, 24, 0, 24)
+CloseBtn.Position = UDim2.new(1, -30, 0, 4)
 CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
 CloseBtn.Text = "✕"
 CloseBtn.TextColor3 = COLOR_TEXT
 CloseBtn.Font = Enum.Font.GothamBold
-Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 6)
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0, 4)
 
 CloseBtn.MouseButton1Click:Connect(function() ScreenGui:Destroy() end)
 
 local ContentContainer = Instance.new("Frame", MainCanvas)
-ContentContainer.Size = UDim2.new(1, -30, 1, -45)
-ContentContainer.Position = UDim2.new(0, 15, 0, 40)
+ContentContainer.Size = UDim2.new(1, -24, 1, -36)
+ContentContainer.Position = UDim2.new(0, 12, 0, 32)
 ContentContainer.BackgroundTransparency = 1
 
 local isMin = false
@@ -193,253 +177,194 @@ MinBtn.MouseButton1Click:Connect(function()
     isMin = not isMin
     if isMin then
         ContentContainer.Visible = false
-        TweenService:Create(MainCanvas, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 420, 0, 40)}):Play()
+        TweenService:Create(MainCanvas, TweenInfo.new(0.3), {Size = UDim2.new(0, 360, 0, 32)}):Play()
         MinBtn.Text = "+"
     else
-        TweenService:Create(MainCanvas, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {Size = UDim2.new(0, 420, 0, 440)}):Play()
+        TweenService:Create(MainCanvas, TweenInfo.new(0.3), {Size = UDim2.new(0, 360, 0, 380)}):Play()
         task.wait(0.15)
         ContentContainer.Visible = true
         MinBtn.Text = "−"
     end
 end)
 
--- HÌNH ĐẠI DIỆN PLAYER + TÊN PLAYER
+-- PLAYER CARD THU NHỎ
 local PlayerCard = Instance.new("Frame", ContentContainer)
-PlayerCard.Size = UDim2.new(1, 0, 0, 70)
+PlayerCard.Size = UDim2.new(1, 0, 0, 54)
 PlayerCard.BackgroundColor3 = COLOR_CARD
-Instance.new("UICorner", PlayerCard).CornerRadius = UDim.new(0, 8)
+Instance.new("UICorner", PlayerCard).CornerRadius = UDim.new(0, 6)
 
 local AvatarImg = Instance.new("ImageLabel", PlayerCard)
-AvatarImg.Size = UDim2.new(0, 54, 0, 54)
-AvatarImg.Position = UDim2.new(0, 8, 0.5, -27)
+AvatarImg.Size = UDim2.new(0, 42, 0, 42)
+AvatarImg.Position = UDim2.new(0, 6, 0.5, -21)
 AvatarImg.BackgroundColor3 = COLOR_BG
 Instance.new("UICorner", AvatarImg).CornerRadius = UDim.new(1, 0)
-local AvatarStroke = Instance.new("UIStroke", AvatarImg)
-AvatarStroke.Color = COLOR_BLUE
-AvatarStroke.Thickness = 1.5
 
 pcall(function()
     AvatarImg.Image = Players:GetUserThumbnailAsync(LocalPlayer.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
 end)
 
 local UsernameLabel = Instance.new("TextLabel", PlayerCard)
-UsernameLabel.Size = UDim2.new(1, -75, 0, 25)
-UsernameLabel.Position = UDim2.new(0, 70, 0, 12)
+UsernameLabel.Size = UDim2.new(1, -60, 0, 20)
+UsernameLabel.Position = UDim2.new(0, 55, 0, 8)
 UsernameLabel.BackgroundTransparency = 1
 UsernameLabel.Text = "@" .. LocalPlayer.Name
 UsernameLabel.TextColor3 = COLOR_TEXT
 UsernameLabel.Font = Enum.Font.GothamBold
-UsernameLabel.TextSize = 15
+UsernameLabel.TextSize = 13
 UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
 
 local DisplayNameLabel = Instance.new("TextLabel", PlayerCard)
-DisplayNameLabel.Size = UDim2.new(1, -75, 0, 20)
-DisplayNameLabel.Position = UDim2.new(0, 70, 0, 35)
+DisplayNameLabel.Size = UDim2.new(1, -60, 0, 16)
+DisplayNameLabel.Position = UDim2.new(0, 55, 0, 28)
 DisplayNameLabel.BackgroundTransparency = 1
 DisplayNameLabel.Text = LocalPlayer.DisplayName
 DisplayNameLabel.TextColor3 = COLOR_GRAY
 DisplayNameLabel.Font = Enum.Font.GothamMedium
-DisplayNameLabel.TextSize = 12
+DisplayNameLabel.TextSize = 11
 DisplayNameLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- TÊN AVATAR (BẮT BUỘC NHẬP)
+-- INPUT TÊN AVATAR
 local AvatarNameBox = Instance.new("TextBox", ContentContainer)
-AvatarNameBox.Size = UDim2.new(1, 0, 0, 38)
-AvatarNameBox.Position = UDim2.new(0, 0, 0, 82)
+AvatarNameBox.Size = UDim2.new(1, 0, 0, 34)
+AvatarNameBox.Position = UDim2.new(0, 0, 0, 62)
 AvatarNameBox.BackgroundColor3 = COLOR_CARD
 AvatarNameBox.TextColor3 = COLOR_BLUE
-AvatarNameBox.PlaceholderText = "Tên Avatar (Bắt buộc)..."
+AvatarNameBox.PlaceholderText = "Nhập tên Avatar để lưu..."
 AvatarNameBox.PlaceholderColor3 = COLOR_GRAY
 AvatarNameBox.Font = Enum.Font.GothamBold
-AvatarNameBox.TextSize = 13
+AvatarNameBox.TextSize = 12
 Instance.new("UICorner", AvatarNameBox).CornerRadius = UDim.new(0, 6)
-local BoxStroke = Instance.new("UIStroke", AvatarNameBox)
-BoxStroke.Color = COLOR_BLUE
 
--- NÚT SAVE AVATAR (SAVE CẢ ANIMATION PACK)
+-- NÚT SAVE
 local SaveAvatarBtn = Instance.new("TextButton", ContentContainer)
-SaveAvatarBtn.Size = UDim2.new(1, 0, 0, 42)
-SaveAvatarBtn.Position = UDim2.new(0, 0, 0, 128)
+SaveAvatarBtn.Size = UDim2.new(1, 0, 0, 36)
+SaveAvatarBtn.Position = UDim2.new(0, 0, 0, 102)
 SaveAvatarBtn.BackgroundColor3 = COLOR_DARK_BLUE
-SaveAvatarBtn.Text = "💾 SAVE AVATAR (+ ANIMATION PACK)"
+SaveAvatarBtn.Text = "💾 SAVE OUTFIT + ANIMATION"
 SaveAvatarBtn.TextColor3 = COLOR_TEXT
 SaveAvatarBtn.Font = Enum.Font.GothamBold
-SaveAvatarBtn.TextSize = 13
+SaveAvatarBtn.TextSize = 12
 Instance.new("UICorner", SaveAvatarBtn).CornerRadius = UDim.new(0, 6)
-local SaveStroke = Instance.new("UIStroke", SaveAvatarBtn)
-SaveStroke.Color = COLOR_BLUE
 
--- NỔI BẬT KHU VỰC DANH SÁCH AVATAR ĐÃ LƯU
-local SavedListLabel = Instance.new("TextLabel", ContentContainer)
-SavedListLabel.Size = UDim2.new(1, 0, 0, 22)
-SavedListLabel.Position = UDim2.new(0, 0, 0, 180)
-SavedListLabel.BackgroundTransparency = 1
-SavedListLabel.Text = "⭐ BẢNG CHỌN AVATAR ĐÃ LƯU:"
-SavedListLabel.TextColor3 = COLOR_BLUE
-SavedListLabel.Font = Enum.Font.GothamBold
-SavedListLabel.TextSize = 12
-SavedListLabel.TextXAlignment = Enum.TextXAlignment.Left
-
+-- LIST DANH SÁCH
 local ScrollList = Instance.new("ScrollingFrame", ContentContainer)
-ScrollList.Size = UDim2.new(1, 0, 0, 130)
-ScrollList.Position = UDim2.new(0, 0, 0, 205)
+ScrollList.Size = UDim2.new(1, 0, 0, 140)
+ScrollList.Position = UDim2.new(0, 0, 0, 144)
 ScrollList.BackgroundColor3 = COLOR_CARD
-ScrollList.ScrollBarThickness = 4
+ScrollList.ScrollBarThickness = 3
 ScrollList.ScrollBarImageColor3 = COLOR_BLUE
 Instance.new("UICorner", ScrollList).CornerRadius = UDim.new(0, 6)
 
 local ScrollLayout = Instance.new("UIListLayout", ScrollList)
-ScrollLayout.Padding = UDim.new(0, 5)
-Instance.new("UIPadding", ScrollList).PaddingTop = UDim.new(0, 5)
+ScrollLayout.Padding = UDim.new(0, 4)
+Instance.new("UIPadding", ScrollList).PaddingTop = UDim.new(0, 4)
 
 local selectedAvatarData = nil
 
-local function refreshAvatarList()
+local function refreshList()
     for _, child in ipairs(ScrollList:GetChildren()) do
         if child:IsA("TextButton") then child:Destroy() end
     end
-
     for name, data in pairs(savedAvatars) do
-        local itemBtn = Instance.new("TextButton", ScrollList)
-        itemBtn.Size = UDim2.new(1, -10, 0, 32)
-        itemBtn.Position = UDim2.new(0, 5, 0, 0)
-        itemBtn.BackgroundColor3 = COLOR_BG
-        itemBtn.Text = "  📦 " .. name
-        itemBtn.TextColor3 = COLOR_TEXT
-        itemBtn.Font = Enum.Font.GothamMedium
-        itemBtn.TextSize = 12
-        itemBtn.TextXAlignment = Enum.TextXAlignment.Left
-        Instance.new("UICorner", itemBtn).CornerRadius = UDim.new(0, 4)
+        local btn = Instance.new("TextButton", ScrollList)
+        btn.Size = UDim2.new(1, -8, 0, 28)
+        btn.Position = UDim2.new(0, 4, 0, 0)
+        btn.BackgroundColor3 = COLOR_BG
+        btn.Text = "  📦 " .. name
+        btn.TextColor3 = COLOR_TEXT
+        btn.Font = Enum.Font.GothamMedium
+        btn.TextSize = 11
+        btn.TextXAlignment = Enum.TextXAlignment.Left
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
 
-        itemBtn.MouseButton1Click:Connect(function()
+        btn.MouseButton1Click:Connect(function()
             selectedAvatarData = data
-            for _, btn in ipairs(ScrollList:GetChildren()) do
-                if btn:IsA("TextButton") then btn.TextColor3 = COLOR_TEXT end
+            for _, b in ipairs(ScrollList:GetChildren()) do
+                if b:IsA("TextButton") then b.TextColor3 = COLOR_TEXT end
             end
-            itemBtn.TextColor3 = COLOR_BLUE
+            btn.TextColor3 = COLOR_BLUE
         end)
     end
 end
+refreshList()
 
-refreshAvatarList()
-
--- NÚT LOAD AVATAR
+-- NÚT LOAD
 local LoadAvatarBtn = Instance.new("TextButton", ContentContainer)
-LoadAvatarBtn.Size = UDim2.new(1, 0, 0, 42)
-LoadAvatarBtn.Position = UDim2.new(0, 0, 0, 345)
+LoadAvatarBtn.Size = UDim2.new(1, 0, 0, 36)
+LoadAvatarBtn.Position = UDim2.new(0, 0, 0, 290)
 LoadAvatarBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 90)
-LoadAvatarBtn.Text = "✨ LOAD AVATAR ĐÃ CHỌN"
+LoadAvatarBtn.Text = "✨ LOAD OUTFIT ĐÃ CHỌN"
 LoadAvatarBtn.TextColor3 = COLOR_TEXT
 LoadAvatarBtn.Font = Enum.Font.GothamBold
-LoadAvatarBtn.TextSize = 13
+LoadAvatarBtn.TextSize = 12
 Instance.new("UICorner", LoadAvatarBtn).CornerRadius = UDim.new(0, 6)
 
--- ================= LOGIC SAVE & LOAD AVATAR =================
-
+-- LOGIC LƯU & DÙNG THỰC TẾ (BẰNG HUMANITY DESCRIPTION AN TOÀN)
 SaveAvatarBtn.MouseButton1Click:Connect(function()
     local name = AvatarNameBox.Text
-    if name == "" or name == "Tên Avatar (Bắt buộc)..." then
-        AvatarNameBox.PlaceholderText = "❌ VUI LÒNG NHẬP TÊN CHUẨN!"
-        task.wait(1.5)
-        AvatarNameBox.PlaceholderText = "Tên Avatar (Bắt buộc)..."
-        return
-    end
-
+    if name == "" or name == "Nhập tên Avatar để lưu..." then return end
     local char = LocalPlayer.Character
     if not char then return end
-
-    -- Quét Humanoid Description
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
 
-    local descSuccess, desc = pcall(function() return hum:GetAppliedDescription() end)
-    
-    if descSuccess and desc then
-        -- Lưu dữ liệu Avatar
+    local success, desc = pcall(function() return hum:GetAppliedDescription() end)
+    if success and desc then
         savedAvatars[name] = {
             HatAccessory = desc.HatAccessory,
             FaceAccessory = desc.FaceAccessory,
             NeckAccessory = desc.NeckAccessory,
             ShoulderAccessory = desc.ShoulderAccessory,
             BackAccessory = desc.BackAccessory,
-            WaistAccessory = desc.WaistAccessory,
             Shirt = desc.Shirt,
             Pants = desc.Pants,
             GraphicTShirt = desc.GraphicTShirt,
-            Head = desc.Head,
-            Face = desc.Face,
-            Torso = desc.Torso,
-            LeftArm = desc.LeftArm,
-            RightArm = desc.RightArm,
-            LeftLeg = desc.LeftLeg,
-            RightLeg = desc.RightLeg,
-
-            -- Save Animation Pack
             IdleAnimation = desc.IdleAnimation,
             WalkAnimation = desc.WalkAnimation,
             RunAnimation = desc.RunAnimation,
-            JumpAnimation = desc.JumpAnimation,
-            FallAnimation = desc.FallAnimation,
-            ClimbAnimation = desc.ClimbAnimation,
-            SwimAnimation = desc.SwimAnimation
+            JumpAnimation = desc.JumpAnimation
         }
-
-        saveDataToFile()
-        refreshAvatarList()
-
-        SaveAvatarBtn.Text = "✔️ ĐÃ LƯU THÀNH CÔNG!"
-        task.wait(1.5)
-        SaveAvatarBtn.Text = "💾 SAVE AVATAR (+ ANIMATION PACK)"
-        AvatarNameBox.Text = ""
+        saveToFile()
+        refreshList()
+        SaveAvatarBtn.Text = "✔️ ĐÃ LƯU XONG!"
+        task.wait(1)
+        SaveAvatarBtn.Text = "💾 SAVE OUTFIT + ANIMATION"
     end
 end)
 
 LoadAvatarBtn.MouseButton1Click:Connect(function()
-    if not selectedAvatarData then
-        LoadAvatarBtn.Text = "❌ CHƯA CHỌN AVATAR!"
-        task.wait(1.5)
-        LoadAvatarBtn.Text = "✨ LOAD AVATAR ĐÃ CHỌN"
-        return
-    end
-
+    if not selectedAvatarData then return end
     local char = LocalPlayer.Character
     if not char then return end
-
     local hum = char:FindFirstChildOfClass("Humanoid")
     if not hum then return end
 
     pcall(function()
-        local newDesc = Instance.new("HumanoidDescription")
-        
-        for prop, val in pairs(selectedAvatarData) do
-            pcall(function() newDesc[prop] = val end)
+        local desc = Instance.new("HumanoidDescription")
+        for k, v in pairs(selectedAvatarData) do
+            pcall(function() desc[k] = v end)
         end
-
-        hum:ApplyDescription(newDesc)
-        LoadAvatarBtn.Text = "⚡ DỊCH CHUYỂN OUTFIT BÁ KHÍ!"
-        task.wait(1.5)
-        LoadAvatarBtn.Text = "✨ LOAD AVATAR ĐÃ CHỌN"
+        hum:ApplyDescription(desc)
+        LoadAvatarBtn.Text = "⚡ LOAD THÀNH CÔNG!"
+        task.wait(1)
+        LoadAvatarBtn.Text = "✨ LOAD OUTFIT ĐÃ CHỌN"
     end)
 end)
 
--- CHẠY ANIMATION LOADING BAN ĐẦU
+-- LOADING ANIMATION
 task.spawn(function()
     LoadingCanvas.Visible = true
-    TweenService:Create(LoadingCanvas, TweenInfo.new(0.4, Enum.EasingStyle.Back), {GroupTransparency = 0}):Play()
-    TweenService:Create(LoadingBarFill, TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = UDim2.new(1, 0, 1, 0)}):Play()
-    
+    TweenService:Create(LoadingCanvas, TweenInfo.new(0.3), {GroupTransparency = 0}):Play()
+    TweenService:Create(LoadingBarFill, TweenInfo.new(1.5), {Size = UDim2.new(1, 0, 1, 0)}):Play()
     for i = 1, 100 do
         ProgressText.Text = "Load menu: " .. i .. "/100"
-        task.wait(0.02)
+        task.wait(0.015)
     end
-
-    TweenService:Create(LoadingCanvas, TweenInfo.new(0.3), {GroupTransparency = 1}):Play()
-    task.wait(0.3)
+    TweenService:Create(LoadingCanvas, TweenInfo.new(0.2), {GroupTransparency = 1}):Play()
+    task.wait(0.2)
     LoadingCanvas:Destroy()
 
-    task.wait(0.3)
-
     MainCanvas.Visible = true
-    MainCanvas.Size = UDim2.new(0, 320, 0, 340)
-    TweenService:Create(MainCanvas, TweenInfo.new(0.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {Size = UDim2.new(0, 420, 0, 440), GroupTransparency = 0}):Play()
+    MainCanvas.Size = UDim2.new(0, 300, 0, 300)
+    TweenService:Create(MainCanvas, TweenInfo.new(0.4, Enum.EasingStyle.Back), {Size = UDim2.new(0, 360, 0, 380), GroupTransparency = 0}):Play()
 end)
