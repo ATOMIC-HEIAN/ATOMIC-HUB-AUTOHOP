@@ -71,7 +71,7 @@ end
 if LocalPlayer.Character then createAdminTitle(LocalPlayer.Character) end
 LocalPlayer.CharacterAdded:Connect(createAdminTitle)
 
--- 1. MÀN HÌNH LOADING (1/100) SIÊU GỌN
+-- 1. MÀN HÌNH LOADING (1/100)
 local LoadingCanvas = Instance.new("CanvasGroup", ScreenGui)
 LoadingCanvas.Size = UDim2.new(0, 260, 0, 140)
 LoadingCanvas.Position = UDim2.new(0.5, -130, 0.5, -70)
@@ -110,7 +110,7 @@ LoadingBarFill.Size = UDim2.new(0, 0, 1, 0)
 LoadingBarFill.BackgroundColor3 = COLOR_BLUE
 Instance.new("UICorner", LoadingBarFill).CornerRadius = UDim.new(0, 3)
 
--- 2. MAIN MENU SIÊU NHỎ GỌN (COMPACT)
+-- 2. MAIN MENU COMPACT
 local MainCanvas = Instance.new("CanvasGroup", ScreenGui)
 MainCanvas.Size = UDim2.new(0, 280, 0, 330)
 MainCanvas.Position = UDim2.new(0.5, -140, 0.5, -165)
@@ -168,7 +168,7 @@ MinBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- PLAYER CARD THU NHỎ
+-- PLAYER CARD
 local PlayerCard = Instance.new("Frame", ContentContainer)
 PlayerCard.Size = UDim2.new(1, 0, 0, 42)
 PlayerCard.BackgroundColor3 = COLOR_CARD
@@ -221,7 +221,7 @@ local SaveAvatarBtn = Instance.new("TextButton", ContentContainer)
 SaveAvatarBtn.Size = UDim2.new(1, 0, 0, 30)
 SaveAvatarBtn.Position = UDim2.new(0, 0, 0, 80)
 SaveAvatarBtn.BackgroundColor3 = COLOR_DARK_BLUE
-SaveAvatarBtn.Text = "💾 SAVE OUTFIT"
+SaveAvatarBtn.Text = "💾 SAVE OUTFIT + ANIM"
 SaveAvatarBtn.TextColor3 = COLOR_TEXT
 SaveAvatarBtn.Font = Enum.Font.GothamBold
 SaveAvatarBtn.TextSize = 11
@@ -287,13 +287,13 @@ local LoadAvatarBtn = Instance.new("TextButton", ContentContainer)
 LoadAvatarBtn.Size = UDim2.new(1, 0, 0, 30)
 LoadAvatarBtn.Position = UDim2.new(0, 0, 0, 250)
 LoadAvatarBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 90)
-LoadAvatarBtn.Text = "✨ LOAD OUTFIT"
+LoadAvatarBtn.Text = "✨ LOAD FULL (OUTFIT + ANIM)"
 LoadAvatarBtn.TextColor3 = COLOR_TEXT
 LoadAvatarBtn.Font = Enum.Font.GothamBold
 LoadAvatarBtn.TextSize = 11
 Instance.new("UICorner", LoadAvatarBtn).CornerRadius = UDim.new(0, 5)
 
--- LOGIC SAVE
+-- LOGIC SAVE (GOM CẢ ACCESSORIES, CLOTHING VÀ HUMANID DESCRIPTION CHO ANIMATION)
 SaveAvatarBtn.MouseButton1Click:Connect(function()
     local name = AvatarNameBox.Text
     if name == "" or name == "Tên outfit..." then
@@ -304,25 +304,39 @@ SaveAvatarBtn.MouseButton1Click:Connect(function()
 
     local char = LocalPlayer.Character
     if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
 
     if not _G.AtomicOutfitsMemory then _G.AtomicOutfitsMemory = {} end
-    _G.AtomicOutfitsMemory[name] = {}
     
+    local savedData = {
+        Items = {},
+        Description = nil
+    }
+
+    -- Lưu vật phẩm (Accessories, Clothing)
     for _, obj in ipairs(char:GetChildren()) do
         if obj:IsA("Accessory") or obj:IsA("Clothing") or obj:IsA("ShirtGraphic") then
             pcall(function()
-                table.insert(_G.AtomicOutfitsMemory[name], obj:Clone())
+                table.insert(savedData.Items, obj:Clone())
             end)
         end
     end
 
+    -- Lưu HumanoidDescription (Chứa Animation Pack, Body Parts, Scale)
+    pcall(function()
+        savedData.Description = hum:GetAppliedDescription()
+    end)
+
+    _G.AtomicOutfitsMemory[name] = savedData
+
     refreshList()
-    StatusLabel.Text = "✔️ Đã lưu: " .. name
+    StatusLabel.Text = "✔️ Đã lưu Full: " .. name
     StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 100)
     AvatarNameBox.Text = ""
 end)
 
--- LOGIC LOAD
+-- LOGIC LOAD (GẮN ĐỒ + ÁP DỤNG DESCRIPTION CHO ANIMATION VÀ BODY)
 LoadAvatarBtn.MouseButton1Click:Connect(function()
     if not selectedOutfitData or not _G.AtomicOutfitsMemory or not _G.AtomicOutfitsMemory[selectedOutfitData] then
         StatusLabel.Text = "❌ Chưa chọn outfit!"
@@ -332,20 +346,33 @@ LoadAvatarBtn.MouseButton1Click:Connect(function()
 
     local char = LocalPlayer.Character
     if not char then return end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if not hum then return end
 
+    local data = _G.AtomicOutfitsMemory[selectedOutfitData]
+
+    -- Xóa đồ cũ
     for _, obj in ipairs(char:GetChildren()) do
         if obj:IsA("Accessory") or obj:IsA("Clothing") or obj:IsA("ShirtGraphic") then
             obj:Destroy()
         end
     end
 
-    for _, item in ipairs(_G.AtomicOutfitsMemory[selectedOutfitData]) do
+    -- Mặc đồ mới
+    for _, item in ipairs(data.Items) do
         pcall(function()
             item:Clone().Parent = char
         end)
     end
 
-    StatusLabel.Text = "✨ Load thành công!"
+    -- Nạp Animation Pack & Body Parts từ HumanoidDescription
+    if data.Description then
+        pcall(function()
+            hum:ApplyDescriptionClient(data.Description)
+        end)
+    end
+
+    StatusLabel.Text = "✨ Load Full thành công!"
     StatusLabel.TextColor3 = Color3.fromRGB(0, 200, 100)
 end)
 
